@@ -1,0 +1,74 @@
+body {
+  padding: 20px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background-image: url("/images/wallpaper1.png");
+}
+
+a {
+  color: mintcream;
+  margin-top: 20px;
+  margin-right: 10px;
+  font-size: small;
+  cursor: pointer;
+}
+
+.main-frame{
+  padding-top: 40px;
+}
+.title{
+  padding: 40px 0 0 30px;
+  font-weight: bolder;
+  font-size: 120px;
+  color: mintcream;
+}
+
+.subtitle{
+  padding: 40px 0 0 120px;
+  font-weight: bolder;
+  font-size: 30px;
+  color: mintcream;
+}
+
+#btn-signin{
+  float: right;
+  font-weight: bolder;
+  margin-top: 5px;
+}
+
+#signin-panel{
+  padding-top: 60px;
+  color: mintcream;
+}
+
+.form-heading{
+  background-color: rgba(230,230,230,0.6);
+  font-weight: bolder;
+  font-size: 18px;
+  color: mintcream;
+  padding: 10px 0 10px 30px;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.form-body{
+  padding:35px 30px 20px 30px;
+  background-color: rgba(230,230,230,0.3);
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.support-icon{
+  width: 48px;
+  height:48px;
+  margin-right: 30px;
+}
+
+#support-panel{
+  margin-left: 20px;
+  margin-top: 40px;
+  padding: 20px 0 20px 40px;
+  background-color: rgba(230,230,230,0.3);
+  border-radius: 10px;
+  text-align: center;
+}
+

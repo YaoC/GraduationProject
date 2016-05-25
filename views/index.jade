@@ -1,0 +1,73 @@
+extends layout
+
+block content
+  link(rel='styleSheet',href='/stylesheets/signin.css')
+  script(src="/bootstrap/js/bootstrap.min.js",type="text/javascript")
+  script(src="/javascripts/spark-md5.min.js",type="text/javascript")
+  script(src="/javascripts/index.js",type="text/javascript")
+
+  //注册页面
+  div(class="modal fade bs-example-modal-sm" id="signUp-modal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
+    div(class="modal-dialog modal-sm")
+      div(class="modal-content")
+        div(class="modal-header")
+          h4 注册新用户
+        div(class="modal-body")
+          div(class="form-group")
+            input(class="form-control" type="email" name="username" id="ipt-username" placeholder="请输入登录邮箱" onblur="validateEmail('username')")
+            span(id="icon-username" aria-hidden="true")
+            span(class="help-block" id="help-username")
+          div(class="form-group")
+            input(class="form-control" type="text" name="nickname" id="ipt-nickname" placeholder="请输入昵称" onblur="validateNickname()")
+            span(id="icon-nickname" aria-hidden="true")
+            span(class="help-block" id="help-nickname")
+          div(class="form-group")
+            input(class="form-control" type="password" name="password" id="ipt-psw1" placeholder="请输入密码（至少6位）" aria-describedby="ipt-psw1Status" onblur="validatePassword1()")
+            span(id="icon-psw1" aria-hidden="true")
+            span(class="help-block" id="help-psw1")
+          div(class="form-group")
+            input(class="form-control" type="password" name="password_2" id="ipt-psw2" placeholder="请再次输入密码" onblur="validatePassword2()")
+            span(id="icon-psw2" aria-hidden="true")
+            span(class="help-block" id="help-psw2")
+        div(class="modal-footer")
+          button(type="button" class="btn btn-default" data-dismiss="modal") 返回
+          button(type="button" class="btn btn-primary" onclick="signUp()") 注册
+  //主页
+  div(class="container")
+    div(id="alert-info")
+    div(class="row main-frame")
+      div(class="col-lg-7")
+        div(class="title") CyChat
+        div(class="subtitle") 基于WebRTC的即时通讯Web APP
+        div(class="row")
+          div(class="col-lg-1")
+          div(class="col-lg-8")
+            div(id="support-panel")
+              a(href="http://www.google.cn/chrome/browser/")
+                img(src="/images/chrome.png" class="support-icon" )
+              a(href="http://www.firefox.com.cn/")
+                img(src="/images/firefox.png" class="support-icon")
+              a(href="http://www.opera.com/zh-cn")
+                img(src="/images/opera.png" class="support-icon")
+          div(class="col-lg-3")
+
+      div(class="col-lg-5" id="signin-panel")
+        div(class="signin-form")
+          div(class="form-heading") 用户登录
+          div(class="form-body")
+            div(class="form-group")
+              input(class="form-control" type="email" name="username" id="ipt-username1" placeholder="请输入登录邮箱" onblur="validateEmail('username1')")
+              span(id="icon-username1" aria-hidden="true")
+              span(class="help-block" id="help-username1")
+            div(class="form-group")
+              input(class="form-control" type="password" name="password" id="ipt-password" placeholder="请输入密码" onblur="validatePassword()")
+              span(id="icon-password" aria-hidden="true")
+              span(class="help-block" id="help-password")
+            div(class="form-group")
+              a(data-toggle="modal" data-target=".bs-example-modal-sm") 注册新用户
+              a() 找回密码
+              button(type="button" class="btn btn-success" id="btn-signin" onclick="signIn()") 登录
+
+
+
+

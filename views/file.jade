@@ -1,0 +1,14 @@
+extends layout
+
+block content
+	script(src="/javascripts/spark-md5.min.js",type="text/javascript")
+	script(src="/javascripts/file-api.js",type="text/javascript")
+	p input a file
+	<input type="file" id="file"/>
+	p
+	<button onclick="getMd5()">Get Md5</button>
+	<button onclick="addFile()">Add File</button>
+	p
+	<input id="num"/>
+	p
+	<button onclick="fileSlice($('#num').val())">Slice Test</button>

@@ -1,0 +1,385 @@
+body {
+  padding: 20px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background-image: url("/images/wallpaper1.png");
+}
+
+a {
+  cursor: pointer;
+  color: #3c3c3c;
+  font-weight: bolder;
+  text-decoration:none;
+}
+
+a:visited{
+  text-decoration:none;
+}
+a:hover{
+  text-decoration:none;
+}
+a:active{
+  text-decoration:none;
+}
+
+.btn{
+  font-weight: bolder;
+}
+
+.myInfo{
+  padding-bottom: 10px;
+}
+
+.main{
+  padding-top: 10px;
+}
+
+.menu{
+
+}
+
+.window{
+
+}
+
+/*主菜单标题*/
+.title{
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 15px;
+  padding-bottom: 5px;
+  background-color: #3c3c3c;
+  text-align: center;
+  font-size: large;
+  font-weight: bolder;
+  color: #ffffff;
+  min-height: 50px;
+}
+
+.title-with-icon{
+  padding-left:35px;
+}
+
+/*主菜单内容容器*/
+.menu-content{
+  min-height: 60vh;
+  max-height: 60vh;
+
+}
+.window-title{
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: #3c3c3c;
+  text-align: center;
+  font-size: large;
+  font-weight: bolder;
+  color: #ffffff;
+  min-height: 20px;
+}
+.window-main{
+  min-height: 64vh;
+  max-height: 64vh;
+  padding: 15px 10px 10px 0;
+  background-color: rgba(248,248,248,0.4);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+}
+
+
+.btn-select{
+  min-height: 60px;
+  background-color: #3c3c3c;
+  color: #ffffff;
+}
+.btn-select:hover{
+  background-color: #8c8c8c;
+}
+
+
+.icon-size{
+  font-size: 10px;
+}
+
+#btn-session{
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 8px;
+}
+
+#btn-file{
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 8px;
+}
+
+/*用户头像*/
+.my-display{
+  max-height: 70px;
+  max-width: 70px;
+}
+.freinds-display{
+  max-height: 45px;
+  max-width: 45px;
+}
+
+.overflow{
+  touch-action: pan-y;
+  overflow-y: auto;
+  background-color: rgba(248,248,248,0.4);
+  border-radius: 2px;
+  padding-left: 1px;
+}
+::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+::-webkit-scrollbar-thumb{
+  width: 2px;
+  height: 2px;
+  background-color: #3c3c3c;
+}
+
+.list-right{
+  padding-left: 60px;
+  text-align: left;
+}
+
+.list-left{
+  float: left;
+}
+
+.content-header{
+  font-size: 15px;
+  font-weight: bolder;
+  word-wrap: break-word;
+  overflow:hidden;
+  text-overflow: ellipsis ;
+}
+
+
+.content-message{
+  padding-right: 10px;
+  color: #9d9d9d;
+  word-wrap: break-word;
+  overflow:hidden;
+  text-overflow: ellipsis ;
+}
+
+#select-notification .content-header{
+  font-size: 18px;
+  text-align: left;
+}
+#select-files .content-header{
+  font-size: 16px;
+  text-align: left;
+}
+
+#select-notification .content-message{
+  text-align: left;
+}
+#select-files .content-message{
+  font-size: 16px;
+  text-align: left;
+}
+
+.content-btn{
+  background-color: #ffffff;
+  margin-top: 0 !important;
+  border-radius: 0 !important;
+  border-top: none;
+  border-right: none;
+  border-left: none;
+  border-bottom: solid;
+  border-bottom-width: 1px;
+  border-color: #f8f8f8;
+}
+
+.switch{
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.menu-bottom{
+  border-style: solid;
+  border-width: 1px;
+  border-color: #3c3c3c;
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  background-color: #3c3c3c;
+}
+
+.window-bottom{
+  border-style: solid;
+  border-width: 1px;
+  border-color: #3c3c3c;
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  background-color: #3c3c3c;
+  padding-top: 5px;
+  padding-left: 5px;
+}
+
+.right-icon{
+  float:right;
+  padding-right:12px;
+  padding-top: 3px;
+  cursor: pointer;
+  background-color: transparent;
+  border-style: none;
+}
+
+.logout-icon{
+  float:right;
+  cursor: pointer;
+  background-color: transparent;
+  border-style: none;
+  margin-left: 10px;
+}
+
+.left-icon{
+  float:left;
+  padding-left:12px;
+  padding-top: 3px;
+  cursor: pointer;
+  background-color: transparent;
+  border-style: none;
+}
+
+
+
+.my-photo{
+  display: inline;
+  float:right;
+  padding-right: 18px;
+  padding-left: 10px;
+}
+
+.my-tag{
+  float: right;
+  max-width: 40%;
+  border-width: 0;
+  margin-top: 5px;
+  background-color: limegreen;
+  padding: 5px 8px 5px 8px;
+  border-radius: 5px;
+  word-wrap: break-word;
+  word-break: break-all;
+  box-shadow: 0px 6px 10px rgba(34, 25, 25, 0.2);
+  font-weight: bolder;
+  margin-bottom: 20px;
+}
+
+
+.my-photo::before{
+  content:"\00a0";
+  font-size: 0;
+  width:0;
+  height:0;
+  border-width:5px 5px 5px 20px;
+  border-style:solid;
+  border-color:transparent  transparent transparent limegreen;
+  position: relative;
+  right:10px;
+  top:-5px;
+}
+
+
+.friends-photo{
+  display: inline;
+  float:left;
+  padding-right: 40px;
+}
+
+.friends-tag{
+  float: left;
+  max-width: 40%;
+  border-width: 0;
+  margin-top: 5px;
+  box-shadow: 0px 6px 10px rgba(34, 25, 25, 0.2);
+  background-color: #ffffff;
+  padding: 5px 8px 5px 8px;
+  border-radius: 5px;
+  word-wrap: break-word;
+  word-break: break-all;
+  font-weight: bolder;
+  margin-bottom: 20px;
+}
+
+
+.friends-photo::before{
+  content:"\00a0";
+  font-size: 0;
+  width:0;
+  height:0;
+  border-width:5px 25px 5px 5px;
+  border-style:solid;
+  border-color:transparent #ffffff transparent transparent ;
+  position: relative;
+  left:85px;
+  top:-5px;
+}
+
+.btn-left{
+  float:right;
+  display: inline;
+  padding: 5px 15px 10px 0;
+}
+
+.btn-right{
+  display: inline;
+  float:right;
+  padding: 5px 30px 10px 0;
+}
+
+.text-title{
+  padding-left: 20px;
+  padding-bottom: 10px;
+  font-weight: bolder;
+}
+
+.text-content{
+  padding-left: 60px;
+  padding-bottom: 50px;
+  padding-right: 30px;
+  background-color: transparent;
+  border: none;
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow-y: auto;
+}
+
+.text-bottom{
+  text-align: right;
+  padding-right: 30px;
+}
+
+#motto{
+  word-wrap: break-word;
+  word-break: break-all;
+  text-overflow: ellipsis ;
+  overflow: hidden;
+  max-height: 50px;
+}
+
+.friends{
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  cursor: default!important;
+}
+
+.motto{
+  word-wrap: break-word;
+  word-break: break-all;
+  padding: 0 30px 0 30px;
+}
+
+#search-file{
+  background-color: #337ab7;
+  color: white;
+  cursor: pointer;
+}
+
+#search-file:hover{
+  background-color: #2e6da4;
+}
