@@ -14,16 +14,6 @@ router.get('/signin', function(req, res, next) {
 });
 
 router.post('/signin',function(req, res, next) {
-	// req.session.regenerate(function(){
- //        req.session.userId = 1;
- //    	console.log(req.session);
- //        req.session.save();  //保存一下修改后的Session
- //    }); 
- 	// req.session.userId = req.body.username;
-  //   res.redirect('/');
-	// req.session.userId = req.body.username; 
-	// // if(req.session.userId)
-	// // 	res.redirect('/');
 	userDao.signin(req, res, next);
 });
 
@@ -44,7 +34,6 @@ router.get('/main', function(req, res, next) {
 	}
 	else
 		res.redirect('/');
-
 });
 
 router.get('/signout', function(req, res, next) {

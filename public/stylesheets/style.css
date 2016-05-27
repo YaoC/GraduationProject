@@ -383,3 +383,21 @@ a:active{
 #search-file:hover{
   background-color: #2e6da4;
 }
+
+.message-left{
+  float: left;
+}
+
+.message-right{
+  float:right;
+}
+
+.fileInfo-title{
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.fileInfo-content{
+  word-wrap: break-word;
+  word-break: break-all;
+}

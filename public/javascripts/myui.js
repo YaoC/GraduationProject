@@ -9,7 +9,6 @@ $(document).ready(function () {
   
   $("#file").fileinput({
     language: 'zh',
-    showRemove: false,
     showPreview: false
   });
 });
@@ -23,7 +22,7 @@ function selectMenu(btn) {
     case 1: $("#select-talk").css("display","block");break;
     case 2: $("#select-friends").css("display","block");break;
     case 3: $("#select-notification").css("display","block");break;
-    case 4: $("#select-files").css("display","block");break;
+    case 4: showFileInfo();$("#select-files").css("display","block");break;
     default:
       $("#select-friends").css("display","block");
       console.log("Some errors on switching the menu ...");
@@ -38,6 +37,7 @@ function removeNotification(id) {
   var id = "#notification-"+id;
   $(id).css("display","none");
 }
+
 
 function showChangePsw() {
   $("#change-psw").css("display","block");
@@ -235,10 +235,34 @@ function removeWindow(id) {
 }
 
 function searchFile(){
-  alert(111);
+  // socket.emit();
 }
 
 function uploadFile() {
   addFile();
+  $('#file').fileinput('clear');
   return false;
+}
+
+function fileSuccess(text) {
+  $("#file-alert-info").empty();
+  $("#file-alert-info").append("<div class=\"alert alert-success alert-dismissible\" role=\"alert\">"+
+    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">" +
+    "<span aria-hidden=\"true\">&times;</span></button>"+
+    "<strong>"+text+"</strong></div>");
+  window.setTimeout(function () {
+    $("#file-alert-info").empty();
+  },2000);
+}
+
+
+function fileError(text) {
+  $("#file-alert-info").empty();
+  $("#file-alert-info").append("<div class=\"alert alert-danger alert-dismissible\" role=\"alert\">"+
+    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">" +
+    "<span aria-hidden=\"true\">&times;</span></button>"+
+    "<strong>"+text+"</strong></div>");
+  window.setTimeout(function () {
+    $("#file-alert-info").empty();
+  },5000);
 }

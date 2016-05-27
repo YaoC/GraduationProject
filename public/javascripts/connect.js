@@ -308,7 +308,7 @@ function addFile(){
 			db = event.target.result;
 			var transaction = db.transaction(["files"], "readwrite");
 			transaction.onerror = function (event) {
-				console.log("Fail to add file : "+event.target.errorCode);
+				console.log("Fail to add file",event.target.error);
 			}
 			transaction.oncomplete = function (event) {
 				console.log("complete !");
@@ -322,38 +322,87 @@ function addFile(){
                     'name': fileName
                 };
 		    	socket.emit('addFile',fileInfo);
-		  	};
+        showFileInfo();
+          fileSuccess('文件上传成功');
+      };
+      request.onerror = function (e) {
+        fileError('文件上传失败, '+e.target.error);
+      }
 		}	
 	});
 }
 
 
-
 /**
- * [getFile 按id查询本地数据库中的文件信息]
- * @param  {[type]} id [文件的md5值]
- * @return {[type]}    [resolve:成功查询到并返回文件信息 reject:未查到文件信息]
+ *获取本地保存的文件信息
+ * @returns {*}
  */
-function getFile(id) {
+function getFiles() {
 	return new Promise(function (resolve,reject) {
 		var request = window.indexedDB.open("MyFileDataBase", 1);
 		request.onerror = function(e) {
 			console.log(e.currentTarget.error.message);
+      reject("Error in getFiles !");
 		};
 		request.onsuccess = function(e) {
 			var db = e.target.result;
 			var transaction = db.transaction(["files"], "readonly");
 			var store = transaction.objectStore("files");
-			var req = store.get(id);
-			req.onsuccess = function(e) {
-				if(e.target.result)
-					resolve(e.target.result);//promise
+      var files = [];
+			var req = store.openCursor();
+			req.onsuccess = function(event) {
+        var cursor = event.target.result;
+				if(cursor){
+          files.push(cursor.value);
+          cursor.continue();
+        }
 				else
-					reject("Can't find this file !");
+          resolve(files);//promise
 			};
 		};
 	});
 }
+
+function getFile(id) {
+  return new Promise(function (resolve,reject){
+    var request = window.indexedDB.open("MyFileDataBase", 1);
+    request.onerror = function(e) {
+      console.log(e.currentTarget.error.message);
+      reject("Error in getFile !");
+    };
+    request.onsuccess = function(e) {
+      var db = e.target.result;
+      var transaction = db.transaction(["files"], "readonly");
+      var store = transaction.objectStore("files");
+      var req = store.get(id);
+      req.onsuccess = function (event) {
+        var file = event.target.result;
+        if (file) {
+          resolve(file);//promise
+        }
+        else
+          reject("No file found !");
+      };
+    }
+  });
+}
+
+function fileDetail(id){
+  getFile(id).then(function (file) {
+    var info = file['file'];
+    $("#file-name").text(file.name);
+    $("#file-size").text(convertSize(info.size));
+    $("#file-lastModify").text(dataFormat(info.lastModified));
+    $("#file-type").text(info.type);
+    $("#file-md5").text(file.id);
+    $("#btn-deleteFile").attr("onclick","deleteFileById('"+file.id+"')");
+    $("#file-info").modal('show');
+  },function (error) {
+    console.log(error);
+  });
+}
+
+
 
 /**
  * [deleteFile 按id删除文件信息]
@@ -371,9 +420,12 @@ function deleteFile(id) {
 		var req = store.delete(id);
 		req.onsuccess = function (e) {
 			console.log("file delete !");
+      showFileInfo();
+      alertInfoSuccess("文件删除成功！");
 			socket.emit('deleteFile',id);
-		}
+		};
 		req.onerror = function (e) {
+      alertInfoDanger("文件删除失败，"+e.target.error);
 			console.log("delete error !");
 		}
 	};				
@@ -394,7 +446,7 @@ function deleteAll(){
 		var req = store.clear();
 		req.onsuccess = function (e) {
 			console.log("files delete !");
-		}
+		};
 		req.onerror = function (e) {
 			console.log("delete error !");
 		}
@@ -453,14 +505,34 @@ function fileSlice(file) {
 	fileReader.readAsBinaryString(blobSlice.call(file, 0, 50));
 }
 
-function showFileInfo(id) {
-	getFile(id).then(function (data) {
-		console.log(data.file);
+function showFileInfo() {
+	getFiles().then(function (files) {
+    $("#file-content").empty();
+		for(var id in files){
+      var file = files[id],
+        info = file['file'];
+      // console.log(file);
+      $("#file-content").append("<button onclick=\"fileDetail(\'"+file.id+"\')\" class=\"content-btn btn btn-block\">" +
+        "<div class=\"content-header\">"+file.name+"</div><div class=\"content-message\"><span class=\"message-left\">" +
+        convertSize(info.size)+"</span><span class=\"message-right\">"+dataFormat(info.lastModified)+"</span></div></button>");
+
+    }
 	},function (error) {
 		console.log(error);
 	});
 }
 
+function dataFormat(stamp) {
+  var date = new Date(stamp),
+    y = date.getFullYear(),
+    m = date.getMonth()+1,
+    d = date.getDate(),
+    h = date.getHours(),
+    min = date.getMinutes();
+  if(min<10)
+    return y+'-'+m+'-'+d+' '+h+':0'+min;
+  return y+'-'+m+'-'+d+' '+h+':'+min;
+}
 
 /**
  * 添加好友
@@ -558,4 +630,28 @@ function handleChat(id,content) {
   }else{
     //TODO 储存到Indexed DB
   }
+}
+
+function convertSize(size) {
+  if(size<1000){
+    return size+"B";
+  }else{
+    size /= 1024;//to KB
+    if(size<1000){
+      return size.toFixed(1)+"KB";
+    }else{
+      size /= 1024;//to MB
+      if(size<1000){
+        return size.toFixed(1)+"MB";
+      }else{
+        size /= 1024;
+        return size.toFixed(1)+"GB";
+      }
+    }
+  }
+}
+
+function deleteFileById(id){
+  deleteFile(id);
+  $('#file-info').modal('hide')
 }

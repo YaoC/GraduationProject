@@ -10,6 +10,8 @@ var redisDao = require('./redisDao');
 var bluebird = require("bluebird");
 bluebird.promisifyAll(redisDao);
 
+var NodeRSA = require('node-rsa');
+
 // 使用连接池，提升性能
 var pool  = mysql.createPool($conf.mysql);
 
@@ -55,17 +57,24 @@ module.exports = {
           console.log("password",psw);
           connection.query($sql.insert, [param.username,psw ,timeStamp], function(err, result) {
             if(result) {
-              redisDao.addNickName(result.insertId,param.nickname);
-              result = {
-                code: 200,
-                msg:'注册成功'
-              };
+              var uid = result.insertId;
+              redisDao.addNickName(uid,param.nickname);
+              var key = new NodeRSA({b: 512});
+              var privateKey = key.exportKey("private");
+              var publicKey = key.exportKey("public");
+              connection.query($userInfo.insert, [uid,0,'1990-01-01','1234567890',privateKey,publicKey], function(err, result) {
+                if(result) {
+                  result = {
+                    code: 200,
+                    msg:'注册成功'
+                  };
+                  // 以json形式，把操作结果返回给前台页面
+                  jsonWrite(res, result);
+                }
+                // 释放连接
+                connection.release();
+              });
             }
-
-            // 以json形式，把操作结果返回给前台页面
-            jsonWrite(res, result);
-            // 释放连接
-            connection.release();
           });
         }
       });
@@ -125,7 +134,7 @@ module.exports = {
       var userId = req.session.userId;
       var param = req.body;
       console.log("param",param);
-      connection.query($userInfo.insert,[userId,param.sex,param.birthday,param.phone], function(err, result) {
+      connection.query($userInfo.insert,[userId,param.sex,param.birthday,param.phone,null,null], function(err, result) {
         if(result==undefined){
           console.log(err);
           result = {

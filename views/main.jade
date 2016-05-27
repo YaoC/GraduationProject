@@ -118,6 +118,7 @@ block content
           button(type="button" class="close" data-dismiss="modal" aria-label="Close")
             span(aria-hidden="true") &times;
           h4 我的文件
+          div(id="file-alert-info")
         div(class="modal-body")
           div(class="row")
             div(class="col-md-6")
@@ -132,19 +133,32 @@ block content
         div(class="modal-footer")
           button(type="button" class="btn btn-primary" id="btn-addFile" onclick="") 上传
 
-  div(class="modal fade bs-example-modal-sm" id="addFriends" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
+  //文件详细信息
+  div(class="modal fade bs-example-modal-sm" id="file-info" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
     div(class="modal-dialog modal-sm")
       div(class="modal-content")
         div(class="modal-header")
-          h4 添加好友
+          h4 文件详情
         div(class="modal-body")
-          div(class="form-group")
-            input(class="form-control input-sm" type="text" placeholder="用户ID" id="ipt-friends" onblur="searchCheck()")
-            span(id="icon-friends" aria-hidden="true")
-            span(class="help-block" id="help-friends")
+          div
+            label(class="fileInfo-title") 文件名
+            span(class="fileInfo-content" id="file-name")
+          div
+            label(class="fileInfo-title") 大小
+            span(class="fileInfo-content" id="file-size")
+          div
+            label(class="fileInfo-title") 最后修改时间
+            span(class="fileInfo-content" id="file-lastModify")
+          div
+            label(class="fileInfo-title") 类型
+            span(class="fileInfo-content" id="file-type")
+          div
+            label(class="fileInfo-title") MD5值
+          div
+            span(class="fileInfo-title" id="file-md5")
         div(class="modal-footer")
           button(type="button" class="btn btn-default" data-dismiss="modal") 返回
-          button(type="button" class="btn btn-primary" id="btn-search" onclick="searchFriend()") 查找
+          button(type="button" class="btn btn-danger" id="btn-deleteFile") 删除
 
   div(class="modal fade bs-example-modal-sm" id="friend-info" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
     div(class="modal-dialog modal-sm")
@@ -176,6 +190,19 @@ block content
           button(type="button" class="btn btn-default" data-dismiss="modal") 返回
           button(type="button" class="btn btn-primary" id="btn-addFriend") 加为好友
 
+  div(class="modal fade bs-example-modal-sm" id="addFriends" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
+    div(class="modal-dialog modal-sm")
+      div(class="modal-content")
+        div(class="modal-header")
+          h4 添加好友
+        div(class="modal-body")
+          div(class="form-group")
+            input(class="form-control input-sm" type="text" placeholder="用户ID" id="ipt-friends" onblur="searchCheck()")
+            span(id="icon-friends" aria-hidden="true")
+            span(class="help-block" id="help-friends")
+        div(class="modal-footer")
+          button(type="button" class="btn btn-default" data-dismiss="modal") 返回
+          button(type="button" class="btn btn-primary" id="btn-search" onclick="searchFriend()") 查找
 
 
   div(class="container")
@@ -235,10 +262,12 @@ block content
             button(class="right-icon" data-toggle="modal" data-target="#my-file")
               span(class="glyphicon glyphicon-download-alt" aria-hidden="true" )
           //内容
-          div(class="menu-content overflow")
-            button(class="content-btn btn btn-block")
-              div(class="content-header") 天下足球.mp4
-              div(class="content-message") 2016-04-20 rshbrsthwrtqaqrv
+          div(class="menu-content overflow" id="file-content")
+            //button(class="content-btn btn btn-block" onclick="fileDetail(id)")
+            //  div(class="content-header") 天下足球.mp4
+            //  div(class="content-message")
+            //    span(class="message-left") 100MB
+            //    span(class="message-right") 2016
 
         //菜单栏底部选项 n选1
         div(class="menu-bottom")
@@ -269,6 +298,8 @@ block content
         div(id="session" style="display:none;")
           input(id="session-id" hidden)
           input(id="friend-pic" hidden)
+          input(id="myPrivateKey" value="#{userInfo.private_key}" hidden)
+          input(id="myPublicKey" value="#{userInfo.public_key}" hidden)
           div(class="window-title" )
             span(id="session-title")
             button(onclick="removeSession(1)" class="left-icon")
@@ -330,6 +361,20 @@ block content
                 button(type="button" class="btn btn-danger") 删除通知
               div(class="btn-left")
                 button(type="button" class="btn btn-primary") 标为已读
+        //
+        //div(id="file-info" style="display:none;")
+        //  div(class="window-title") 文 件 信 息
+        //    button(onclick="removeFileInfo()" class="right-icon")
+        //      span(class="glyphicon glyphicon-remove" aria-hidden="true" )
+        //  div(class="window-main")
+
+        //
+        //  div(class="window-bottom")
+        //    div(class="row")
+        //      div(class="btn-right")
+        //        button(type="button" class="btn btn-danger") 删除通知
+        //      div(class="btn-left")
+        //        button(type="button" class="btn btn-primary") 标为已读
 
 
       div(class="col-lg-1")
