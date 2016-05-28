@@ -235,7 +235,14 @@ function removeWindow(id) {
 }
 
 function searchFile(){
-  // socket.emit();
+  var md5 = $("#ipt-md5").val();
+  // getFile(md5).then(function (file) {
+  //   fileError("此文件已在本地存在");
+  // },function () {
+  //   socket.emit("searchFile",md5);
+  //   //TODO 添加一个查询中的动态图标
+  // });
+  socket.emit("searchFile", md5);//Test
 }
 
 function uploadFile() {

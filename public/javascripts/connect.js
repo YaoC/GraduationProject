@@ -5,7 +5,8 @@ var dataChannels = {};
 var connections = [];
 var pc;
 var dataChannel;
-
+//fileForm 保存拥有某文件的用户数组
+var fileFrom = {};
 // var ID_temp;
 
 // 设置iceserver
@@ -132,6 +133,19 @@ socket.on('candidate',function (data) {
 
 socket.on('disconnect', function(){
 	console.log("disconnected!");
+});
+
+socket.on("serachFileResult", function (info) {
+  console.log(info)
+  fileFrom[info.id] = info.users;
+  $("#fileSearchResult").empty();
+  $("#fileSearchResult").append("<div><label>查询结果</label></div><label>文件id：<span>" + info.id + "&nbsp;&nbsp;&nbsp;&nbsp;</span>  " +
+    "<label>文件名：</label><span>" + info.name + "</span></label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " +
+    "<button type=\"button\" id=\"btn-downloadFile\" onclick=\"downloadFile('" + info.id + "')\" class=\"btn btn-success btn-xs\">下载</button>");
+});
+
+socket.on("searchFileError", function (error) {
+  console.log(error)
 });
 
 
@@ -529,8 +543,10 @@ function dataFormat(stamp) {
     d = date.getDate(),
     h = date.getHours(),
     min = date.getMinutes();
-  if(min<10)
-    return y+'-'+m+'-'+d+' '+h+':0'+min;
+  m = m < 10 ? ('0' + m) : m;
+  d = d < 10 ? ('0' + d) : d;
+  h = h < 10 ? ('0' + h) : h;
+  min = min < 10 ? ('0' + min) : min;
   return y+'-'+m+'-'+d+' '+h+':'+min;
 }
 
@@ -654,4 +670,8 @@ function convertSize(size) {
 function deleteFileById(id){
   deleteFile(id);
   $('#file-info').modal('hide')
+}
+
+function downloadFile(id) {
+  console.log(fileFrom[id]);
 }

@@ -117,21 +117,27 @@ block content
         div(class="modal-header")
           button(type="button" class="close" data-dismiss="modal" aria-label="Close")
             span(aria-hidden="true") &times;
-          h4 我的文件
+          h4 文件系统
           div(id="file-alert-info")
+        //上传、查询
         div(class="modal-body")
           div(class="row")
             div(class="col-md-6")
               form(onsubmit="return uploadFile()")
+                label(class="control-label") 上传文件
                 input(class="file" type="file" id="file" placeholder="上传文件" data-preview-file-type="text")
             div(class="col-md-6")
+              label(class="control-label") 查找文件
               div(class="input-group")
-                input(class="form-control" placeholder="输入文件名或MD5值查找文件")
+                input(class="form-control" placeholder="输入文件MD5值查找文件" id="ipt-md5")
                 label(id="search-file" class="input-group-addon" onclick="searchFile()")
                   span(class="glyphicon glyphicon-search" aria-hidden="true")
+        //查询结果
+        div(class="modal-body" id="fileSearchResult")
+        //下载中面板
+        div(class="modal-body")
+          label(id="downloading")
 
-        div(class="modal-footer")
-          button(type="button" class="btn btn-primary" id="btn-addFile" onclick="") 上传
 
   //文件详细信息
   div(class="modal fade bs-example-modal-sm" id="file-info" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")

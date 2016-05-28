@@ -7,35 +7,35 @@ var Promise = require("bluebird");
 
 module.exports = {
 	userOnline: function (uid) {
-		client.sadd("onlineUsers", uid, redis.print);
+    client.sadd("onlineUsers", uid);
 	},
 	isUserOnline: function (uid) {
 		return client.sismember("onlineUsers", uid);
 	},
 	userOffline: function (uid) {
-		client.srem("onlineUsers", uid, redis.print);
+    client.srem("onlineUsers", uid);
 	},
 	addFile: function (uid,file) {
 
-		client.sadd("file:"+file['id'], uid, redis.print);
-    	client.sadd("user:"+uid, file['id'], redis.print);
-		client.hsetnx("file-name",file['id'], file['name'], redis.print);
-		// client.hincrby("file-count",file['id'],1,redis.print);
+    client.sadd("file:" + file['id'], uid);
+    client.sadd("user:" + uid, file['id']);
+    client.hsetnx("file-name", file['id'], file['name']);
+    // client.hincrby("file-count",file['id'],1);
 	},
 	deleteFile: function (uid,fid) {
-		client.srem("file:"+fid, uid, redis.print);
-    	client.srem("user:"+uid, fid, redis.print);
-		client.hincrby("file-count",fid,-1,redis.print);
+    client.srem("file:" + fid, uid);
+    client.srem("user:" + uid, fid);
+    client.hincrby("file-count", fid, -1);
 		if(!client.exists("file:"+fid)){
-			client.hdel("file-name",fid,redis.print);
+      client.hdel("file-name", fid);
 		}
 	},
 	deleteAllFileByUser: function (uid) {
 		client.smembers("user:"+uid,function (err, replies) {
 			replies.forEach(function (reply, i) {
-				client.srem("file:"+reply,uid,redis.print);
+        client.srem("file:" + reply, uid);
 				if(!client.exists("file:"+reply)){
-					client.hdel("file-name",reply,redis.print);
+          client.hdel("file-name", reply);
 				}
 				console.log("remove "+uid+" from file:"+reply);
 				client.del("user:"+uid);
@@ -43,7 +43,7 @@ module.exports = {
 		});
 	},
 	addFriendsAsk: function (uid,fid) {
-		client.sadd("askof:"+uid,fid,redis.print);
+    client.sadd("askof:" + uid, fid);
 	},
   getFriendsAsk:function (uid) {
     return new Promise(function (resolve, reject) {
@@ -63,18 +63,19 @@ module.exports = {
 		return client.sismember("askof:"+uid, fid);
 	},
 	deleteFriendsAsk:function (uid,fid) {
-		client.srem("askof:"+uid, fid,redis.print);
+    client.srem("askof:" + uid, fid);
 	},
 	addFriendsRelationship:function (uid1,uid2) {
-		client.sadd('friendsof:'+uid1,uid2,redis.print);
-		client.sadd('friendsof:'+uid2,uid1,redis.print);
+    client.sadd('friendsof:' + uid1, uid2);
+    client.sadd('friendsof:' + uid2, uid1);
 	},
   addNickName: function (uid,nickname) {
-    client.hsetnx("info:"+uid,'nickname', nickname, redis.print);
+    client.hset("info:" + uid, 'nickname', nickname);
   },
   addMotto: function (uid,motto) {
-    client.hsetnx("info:"+uid,'motto', motto, redis.print);
+    client.hset("info:" + uid, 'motto', motto);
   },
+
   getNickName: function (uid) {
     return new Promise(function(resolve, reject){
       client.hget("info:"+uid,'nickname',function (err, reply) {
@@ -100,6 +101,27 @@ module.exports = {
       client.hgetall("info:"+uid,function (err,info) {
         info['id'] = uid;
         resolve(info);
+      });
+    });
+  },
+  searchFile: function (id) {
+    return new Promise(function (resolve, reject) {
+      var info = {};
+      client.hget("file-name", id, function (err, reply) {
+        if (reply) {
+          info['name'] = reply;
+          client.smembers("file:" + id, function (err, replies) {
+            if (replies.length) {
+              info['id'] = id;
+              info['users'] = replies;
+              resolve(info);
+            } else {
+              reject("The owner of this file is offline.");
+            }
+          })
+        } else {
+          reject("No such file.");
+        }
       });
     });
   }

@@ -187,6 +187,14 @@ io.on('connection', function(socket) {
     redisDao.deleteFile(userId,fileId);
   });
 
+  socket.on("searchFile", function (md5) {
+    redisDao.searchFile(md5).then(function (info) {
+      socket.emit("serachFileResult", info);
+    }, function (error) {
+      socket.emit("searchFileError", error);
+    });
+  });
+
 
 /***************************好友关系部分*********************************/
     /**

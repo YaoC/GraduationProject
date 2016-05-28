@@ -11,6 +11,14 @@ a {
   text-decoration:none;
 }
 
+label {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
 a:visited{
   text-decoration:none;
 }
@@ -53,6 +61,12 @@ a:active{
   font-weight: bolder;
   color: #ffffff;
   min-height: 50px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+
 }
 
 .title-with-icon{
@@ -400,4 +414,12 @@ a:active{
 .fileInfo-content{
   word-wrap: break-word;
   word-break: break-all;
+}
+
+.modal-header {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }

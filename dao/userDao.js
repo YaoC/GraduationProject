@@ -169,8 +169,9 @@ module.exports = {
         }else{
           info = result[0];
         }
-        redisDao.getPortrait(userId).then(function (reply) {
-            info['display'] = reply||'http://i4.buimg.com/6b2fade4a2d1b576.jpg';
+        redisDao.getFriendInfo(userId).then(function (me) {
+          info['display'] = me['portrait'] || 'http://i4.buimg.com/6b2fade4a2d1b576.jpg';
+          info['motto'] = me['motto'] || '点此添加签名';
           res.render('main', {
             title: 'Main',
             userId: req.session.userId,
