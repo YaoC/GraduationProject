@@ -144,7 +144,8 @@ io.on('connection', function(socket) {
 			if (redisDao.isUserOnline(friendsId)) {
         var message = {
           'from': userId,
-          'description':data['description']
+          'description': data['description'],
+          'isChat': data['isChat']
         };
 				sockets[friendsId].emit('offer',message);
 			}

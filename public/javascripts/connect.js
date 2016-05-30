@@ -7,72 +7,28 @@ var pc;
 var dataChannel;
 //fileForm 保存拥有某文件的用户数组
 var fileFrom = {};
-// var ID_temp;
 
-// 设置iceserver
-// var webrtcDetectedBrowser = "Chrome";
-// if(navigator.userAgent.indexOf("Firefox")>0){
-// 	webrtcDetectedBrowser = "Firefox";
-// }
-// var configuration;
-// if (webrtcDetectedBrowser === 'Firefox') {
-//     configuration = {
-//         'iceServers': [{
-//             'url': 'stun:23.21.150.121'
-//         }]
-//     };
-// } else {
-//     configuration = {
-//         'iceServers': [{
-//             // 'url': 'stun:stun.l.google.com:19302'
-//             'url': 'stun:stun.sipgate.net'
-//         }]
-//     };
-// }
-// 
+var receiveFiles = {};
 var configuration = {
-        'iceServers': [{
-            // 'url': 'stun:stun.l.google.com:19302'
-            'url': 'stun:stun.sipgate.net'
-      	}]
+  'iceServers': [{
+    // 'url': 'stun:stun.l.google.com:19302'
+    'url': 'stun:stun.sipgate.net'
+  }]
 };
-
-var sdpConstraints = {
-    'mandatory': {
-        'OfferToReceiveAudio': false,
-        'OfferToReceiveVideo': false
-    }
-};
-
-
-
 
 /********************************WebSocket**********************************/
 //与服务器建立Web Socket连接
 var socket = io.connect();
 
-//向服务器发送当前用户的信息
-// function connect(name,id) {
-// 	console.log(name+" "+id);	
-// 	socket.emit('connectById', id);
-// }
-
-
-// socket.on('connection', function(evt){
-// 	ID_temp = evt;
-// 	console.log('your ID is ' + ID_temp);
-// });
-
 function join(friendsId) {
-	start (true,friendsId) ;
+  start(true, friendsId, 1);
 }
-
-
 
 socket.on('offer', function(data){
 	var friendsID = data['from'];
+  var isChat = data['isChat'];
 	if (!pc) {
-		start(false,friendsID);	
+    start(false, friendsID, isChat);
 		console.log('pc create in offer');
 	}	
 	var desc = JSON.parse(JSON.stringify(data['description']));
@@ -80,7 +36,7 @@ socket.on('offer', function(data){
 	sdp.type = 'offer';
 	sdp.sdp = desc['sdp'];
 	console.log('offer:remoteDescription:');
-	console.log(sdp)
+  console.log(sdp);
 	pc.setRemoteDescription(sdp).then(function () {
 		return pc.createAnswer(); 
 	})
@@ -104,16 +60,12 @@ socket.on('offer', function(data){
 
 socket.on('answer', function(data){
 	var friendsId = data['from'];
-	if (!pc) {
-		start(false,friendsId);	
-		console.log('pc create in answer');
-	}	
 	var desc = JSON.parse(JSON.stringify(data['description']));
 	var sdp = new RTCSessionDescription();
 	sdp.type = 'answer';
 	sdp.sdp = desc['sdp'];
 	console.log('answer:remoteDescription:');
-	console.log(sdp)
+  console.log(sdp);
 	pc.setRemoteDescription(sdp).catch(logError);
 	connections.push(friendsId);
 	console.log('in answer:');
@@ -136,16 +88,18 @@ socket.on('disconnect', function(){
 });
 
 socket.on("serachFileResult", function (info) {
-  console.log(info)
+  console.log(info);
   fileFrom[info.id] = info.users;
   $("#fileSearchResult").empty();
   $("#fileSearchResult").append("<div><label>查询结果</label></div><label>文件id：<span>" + info.id + "&nbsp;&nbsp;&nbsp;&nbsp;</span>  " +
-    "<label>文件名：</label><span>" + info.name + "</span></label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " +
-    "<button type=\"button\" id=\"btn-downloadFile\" onclick=\"downloadFile('" + info.id + "')\" class=\"btn btn-success btn-xs\">下载</button>");
+    "<label>文件名：</label><span>" + info.name + "&nbsp;&nbsp;&nbsp;&nbsp;</span></label>" +
+    "<label>大小：</label><span>" + convertSize(info.size) + "</span></label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " +
+    "<button type=\"button\" id=\"btn-downloadFile\" onclick=\"downloadFile('" + info.id + "'," + info.size + ")\" class=\"btn btn-success btn-xs\">下载</button>");
 });
 
 socket.on("searchFileError", function (error) {
-  console.log(error)
+  console.log(error);
+  fileError("未找到此文件");
 });
 
 
@@ -153,10 +107,10 @@ socket.on("searchFileError", function (error) {
 
 
 
-function start (isInitiator,friendsId) {
+function start(isInitiator, friendsId, ischatChannel, fileId) {
 	pc = new RTCPeerConnection(configuration);
   	// send any ice candidates to the other peer
-	
+
 	pc.onicecandidate = function (evt) {
 		console.log('candidate: ');
 		console.log(evt);
@@ -174,13 +128,14 @@ function start (isInitiator,friendsId) {
   		console.log('negotiationneeded event ');
     		pc.createOffer().then(function (offer) {
     			console.log(offer);
-    			 return pc.setLocalDescription(offer); 
+          return pc.setLocalDescription(offer);
     		})
     		.then(function () {
     			if (friendsId) {
 		  		var message = {
 	    				'to':friendsId,
-	    				'description':pc.localDescription
+            'description': pc.localDescription,
+            'isChat': ischatChannel
 	    			};
 	    			socket.emit('letsTalk',message);
   			}
@@ -191,45 +146,78 @@ function start (isInitiator,friendsId) {
 		// create data channel and setup chat
 		dataChannel = pc.createDataChannel("chat");
 		dataChannels[friendsId] = dataChannel;
-		setupChat(friendsId);
-    openSession(friendsId);
+      setupChat(friendsId, ischatChannel, fileId);
+      if (ischatChannel)
+        openSession(friendsId);
 	} else {
 		// setup chat on incoming data channel
 		pc.ondatachannel = function (evt) {
 			dataChannels[friendsId] = evt.channel;
-			setupChat(friendsId);
+      setupChat(friendsId, ischatChannel, 0);
 		};
   }
 }
 
 
+function setupChat(id, ischatChannel, fileId) {
+  if (ischatChannel) {
+    dataChannels[id].onopen = function () {
+      addConnection(id);
+      console.log('channel open');
+    };
+  } else {//file channel
+    if (fileId) {
+      dataChannels[id].onopen = function () {
+        console.log('channel open');
+        var me = $("#ipt-userId").val();
+        var message = {
+          "tag": 'askFile',
+          "from": me,
+          "fileId": fileId
+        };
+        receiveFiles[fileId] = [];
+        dataChannels[id].send(JSON.stringify(message));
+      };
+    } else {
+      dataChannels[id].onopen = function () {
+        console.log('channel open');
+      };
+    }
+  }
+  dataChannels[id].onmessage = function (evt) {
+    //TODO RSA加密解密 http://www-cs-students.stanford.edu/~tjw/jsbn/
+    var message = JSON.parse(evt.data);
+    switch (message['tag']) {
+      case 'chat':
+        handleChat(id, message['content']);
+        break;
+      case 'askFile':
+        sendSingleFile(id, message.fileId);
+        break;
+      case 'fileToChat':
+      {
+        var connection = document.getElementById("friendsSession-" + id);
+        if (!connection)
+          addConnection(id);
+        break;
+      }
+      case 'completeFile':
+      {
+        receiveCompleteFile(message);
+        break;
+      }
+      default:
+        console.log("a message from " + id);
+    }
 
-
-
-function setupChat(id){
-	dataChannels[id].onopen = function () {
-    addConnection(id);
-		console.log('channel open');
-
-	};
-
-    	dataChannels[id].onmessage = function (evt) {
-        //TODO RSA加密解密 http://www-cs-students.stanford.edu/~tjw/jsbn/
-    		var message = JSON.parse(evt.data);
-    		if(message['tag']=='chat'){
-          handleChat(id,message['content']);
-        }
-
-    		//else if(message['tag'] == 'file' )
-
-    	};
-    	dataChannels[id].onclose = function () {
-    		delete(dataChannels[id]);
-    		delete(peerConnections[id]);
-    		connections.splice(id,1);
-    		console.log(id+' disconnected !');
-        removeConnection(id);
-    	}
+  };
+  dataChannels[id].onclose = function () {
+    delete(dataChannels[id]);
+    delete(peerConnections[id]);
+    connections.splice(id, 1);
+    console.log(id + ' disconnected !');
+    removeConnection(id);
+  }
 }
 
 function send(id,msg) {
@@ -261,11 +249,12 @@ var idbSuccess = function (event) {
 		var files = e.target.result;
 		for (var i = 0; i < files.length; i++) {
 			var file = files[i];
-            var data = {
-                'id':file['id'],
-                'name':file['name']
-            };
-	    	socket.emit('addFile',data);
+      var data = {
+        'id': file['id'],
+        'name': file['name'],
+        'size': file['file'].size
+      };
+      socket.emit('addFile', data);
 		}
 	}
 };
@@ -305,6 +294,7 @@ function addFile(){
 	}
 	var file = document.getElementById("file").files[0];
 	var fileName = file.name;
+  var fileSize = file.size;
 	if(!file){
 		console.log("No file !");
 		return false;
@@ -312,7 +302,7 @@ function addFile(){
 	getMd5(file).then(function(md_5){
 		var data = {
 		'id': md_5,
-        'name': fileName,
+      'name': fileName,
 		'file': file
 		};
 		console.log(data);
@@ -323,17 +313,18 @@ function addFile(){
 			var transaction = db.transaction(["files"], "readwrite");
 			transaction.onerror = function (event) {
 				console.log("Fail to add file",event.target.error);
-			}
+      };
 			transaction.oncomplete = function (event) {
 				console.log("complete !");
-			}
+      };
 			var objectStore = transaction.objectStore("files");
 			var request = objectStore.add(data);
 			request.onsuccess = function(event) {
 		    	console.log("Add file successfully !");
                 var fileInfo = {
                     'id': md_5,
-                    'name': fileName
+                  'name': fileName,
+                  'size': fileSize
                 };
 		    	socket.emit('addFile',fileInfo);
         showFileInfo();
@@ -400,6 +391,7 @@ function getFile(id) {
     }
   });
 }
+
 
 function fileDetail(id){
   getFile(id).then(function (file) {
@@ -503,7 +495,7 @@ function getMd5(file) {
 			var start = currentChunk * chunkSize,
 				end = ((start + chunkSize) >= file.size) ? file.size : start + chunkSize;
 			fileReader.readAsArrayBuffer(blobSlice.call(file, start, end));
-		};
+    }
 		console.log("file name: "+file.name+" ("+file.size.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, ',')+" bytes)\n");
 		loadNext();
 	});
@@ -536,6 +528,103 @@ function showFileInfo() {
 	});
 }
 
+
+function sendSingleFile(userId, fileId) {
+  getFile(fileId).then(function (file) {
+    sendFileBlock(userId, file, 0, 1)
+  }, function (error) {
+    console.log(error);
+  });
+}
+
+function sendFileBlock(userId, data, blockId, isCompleteFile) {
+  var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice;
+  var file = data['file'],
+    blockStart = blockId * 10485760,
+    chunkSize = 20480,
+    totalChunk = Math.ceil(file.size / chunkSize),
+    currentChunk = 0;
+  readChunkOnLoad_complete = function (e) {
+    // console.log(e.target.result);
+    var message = {
+      'tag': 'completeFile',
+      'chunk': e.target.result,
+      'id': data['id']
+    };
+    currentChunk++;
+    if (currentChunk < totalChunk) {
+      message['isLast'] = 0;
+      dataChannels[userId].send(JSON.stringify(message));
+      console.log("send " + Math.ceil(currentChunk / totalChunk * 10000) / 100 + "% of this file ...");
+      readNext();
+    }
+    else {
+      message['isLast'] = 1;
+      message['name'] = data['name'];
+      dataChannels[userId].send(JSON.stringify(message));
+      console.log("send file completely !");
+    }
+  };
+  readChunkOnError = function (e) {
+    console.log("error", e.target.result);
+  };
+  readNext = function () {
+    var fileReader = new FileReader();
+    if (isCompleteFile)
+      fileReader.onload = readChunkOnLoad_complete;
+    else
+      fileReader.onload = readChunkOnLoad;
+    fileReader.onerror = readChunkOnError;
+    var start = currentChunk * chunkSize + blockStart,
+      end = ((start + chunkSize) >= file.size) ? file.size : start + chunkSize;
+    fileReader.readAsDataURL(blobSlice.call(file, start, end));
+  };
+  readNext();
+}
+
+function receiveCompleteFile(message) {
+  // console.log(message);
+  var fileId = message['id'];
+  Array.prototype.push.apply(receiveFiles[fileId], dataURLtoBlob(message['chunk']));
+  if (message['isLast'])
+    saveFile(fileId, message['name']);
+}
+
+
+function saveFile(id, fileName) {
+  var aLink = document.createElement('a');
+  // var blob = dataURLtoBlob(receiveFiles[id]);
+  var evt = document.createEvent("HTMLEvents");
+  evt.initEvent("click", false, false);
+  aLink.download = fileName;
+  aLink.href = window.URL.createObjectURL(new Blob([new Uint8Array(receiveFiles[id])], {type: "image/jpeg"}));
+  aLink.dispatchEvent(evt);
+  delete receiveFiles[id];
+}
+
+
+function dataURLtoBlob(dataURL) {
+  // convert base64/URLEncoded data component to raw binary data held in a string
+  var byteString;
+  if (dataURL.split(',')[0].indexOf('base64') >= 0)
+    byteString = atob(dataURL.split(',')[1]);
+  else
+    byteString = unescape(dataURL.split(',')[1]);
+  // separate out the mime component
+  // var mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+  // write the bytes of the string to a typed array
+  var ia = new Uint8Array(byteString.length);
+  for (var i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  // return new Blob([ia], {
+  //   type: mimeString
+  // });
+  return ia;
+}
+
+
+/*********************************************************************************/
 function dataFormat(stamp) {
   var date = new Date(stamp),
     y = date.getFullYear(),
@@ -593,11 +682,15 @@ socket.on('newFriend',function (info) {
 function talkWith(id,name,pic) {
   if(dataChannels[id]){
     openSession(id,name,pic);
+    var connection = document.getElementById("friendsSession-" + id);
+    if (!connection) {
+      addConnection(id);
+      var message = {'tag': 'fileToChat'};
+      dataChannels[id].send(JSON.stringify(message));
+    }
   }else{
     join(id);
   }
-
-
 }
 
 
@@ -672,6 +765,17 @@ function deleteFileById(id){
   $('#file-info').modal('hide')
 }
 
-function downloadFile(id) {
-  console.log(fileFrom[id]);
+function downloadFile(id, size) {
+  var users = fileFrom[id];
+  if (!users) {
+    fileError("无此文件或无用户在线");
+    return false;
+  }
+  // single connect when file size <= 10MB
+  if (size <= 10485760) {
+    if (!dataChannels[id])
+      start(1, users[0], 0, id);
+  } else {
+    alert("bigger than 10mb");
+  }
 }

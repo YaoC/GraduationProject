@@ -19,25 +19,18 @@ module.exports = {
 
     client.sadd("file:" + file['id'], uid);
     client.sadd("user:" + uid, file['id']);
-    client.hsetnx("file-name", file['id'], file['name']);
-    // client.hincrby("file-count",file['id'],1);
+    client.setnx("file-info:" + file['id'], JSON.stringify(file));
+    // client.hsetnx("file-name", file['id'], file['name']);
+
 	},
 	deleteFile: function (uid,fid) {
     client.srem("file:" + fid, uid);
     client.srem("user:" + uid, fid);
-    client.hincrby("file-count", fid, -1);
-		if(!client.exists("file:"+fid)){
-      client.hdel("file-name", fid);
-		}
 	},
 	deleteAllFileByUser: function (uid) {
 		client.smembers("user:"+uid,function (err, replies) {
 			replies.forEach(function (reply, i) {
         client.srem("file:" + reply, uid);
-				if(!client.exists("file:"+reply)){
-          client.hdel("file-name", reply);
-				}
-				console.log("remove "+uid+" from file:"+reply);
 				client.del("user:"+uid);
 			});
 		});
@@ -106,13 +99,11 @@ module.exports = {
   },
   searchFile: function (id) {
     return new Promise(function (resolve, reject) {
-      var info = {};
-      client.hget("file-name", id, function (err, reply) {
+      client.get("file-info:" + id, function (err, reply) {
         if (reply) {
-          info['name'] = reply;
+          var info = JSON.parse(reply);
           client.smembers("file:" + id, function (err, replies) {
             if (replies.length) {
-              info['id'] = id;
               info['users'] = replies;
               resolve(info);
             } else {

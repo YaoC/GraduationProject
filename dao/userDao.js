@@ -193,6 +193,8 @@ module.exports = {
           if(result.length){
             var data = result[0];
             delete  data['phone'];
+            delete data['private_key'];
+            delete data['public_key'];
             redisDao.getNickName(id).then(function (nickname) {
               data['nickname'] = nickname||'该用户未设置昵称';
               redisDao.getPortrait(id).then(function (portrait) {
@@ -208,7 +210,7 @@ module.exports = {
             };
             jsonWrite(res, data);
           }
-          // connection.release();
+          connection.release();
         });
       });
     }else{
