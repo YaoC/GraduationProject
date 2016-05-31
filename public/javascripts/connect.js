@@ -10,6 +10,11 @@ var fileFrom = {};
 
 var receiveFiles = {};
 var mergingFiles = {};
+
+//必须能被24整除
+const blockSize = 10493952;
+const chunkSize = 20496;
+
 var configuration = {
   'iceServers': [{
     // 'url': 'stun:stun.l.google.com:19302'
@@ -89,13 +94,12 @@ socket.on('disconnect', function(){
 });
 
 socket.on("serachFileResult", function (info) {
-  console.log(info);
   fileFrom[info.id] = info.users;
   $("#fileSearchResult").empty();
   $("#fileSearchResult").append("<div><label>查询结果</label></div><label>文件id：<span>" + info.id + "&nbsp;&nbsp;&nbsp;&nbsp;</span>  " +
     "<label>文件名：</label><span>" + info.name + "&nbsp;&nbsp;&nbsp;&nbsp;</span></label>" +
     "<label>大小：</label><span>" + convertSize(info.size) + "</span></label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " +
-    "<button type=\"button\" id=\"btn-downloadFile\" onclick=\"downloadFile('" + info.id + "'," + info.size + ")\" class=\"btn btn-success btn-xs\">下载</button>");
+    "<button type=\"button\" id=\"btn-downloadFile\" onclick=\"downloadFile('" + info.id + "','" + info.name + "'," + info.size + ")\" class=\"btn btn-success btn-xs\">下载</button>");
 });
 
 socket.on("searchFileError", function (error) {
@@ -181,7 +185,8 @@ function setupChat(id, ischatChannel, fileId, blockId) {
         } else {
           message['tag'] = 'askBlock';
           message['blockId'] = blockId;
-          receiveFiles[fileId][blockId] = new Uint8Array();
+          receiveFiles[fileId][blockId] = {};
+          receiveFiles[fileId][blockId]['data'] = new Uint8Array();
         }
         dataChannels[id].send(JSON.stringify(message));
       };
@@ -486,8 +491,8 @@ function getMd5(file) {
 	return new Promise(function (resolve,reject) {
 		// var file = document.getElementById("file").files[0];
 		var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
-		chunkSize = 2097152, // read in chunks of 2MB
-		chunks = Math.ceil(file.size / chunkSize),
+      sliceSize = 2097152, // read in chunks of 2MB
+      chunks = Math.ceil(file.size / sliceSize),
 		currentChunk = 0,
 		spark = new SparkMD5.ArrayBuffer(),
 		frOnload = function(e){
@@ -509,8 +514,8 @@ function getMd5(file) {
 			var fileReader = new FileReader();
 			fileReader.onload = frOnload;
 			fileReader.onerror = frOnerror;
-			var start = currentChunk * chunkSize,
-				end = ((start + chunkSize) >= file.size) ? file.size : start + chunkSize;
+      var start = currentChunk * sliceSize,
+        end = ((start + sliceSize) >= file.size) ? file.size : start + sliceSize;
 			fileReader.readAsArrayBuffer(blobSlice.call(file, start, end));
     }
 		console.log("file name: "+file.name+" ("+file.size.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, ',')+" bytes)\n");
@@ -568,11 +573,10 @@ function sendBlock(userId, message) {
 function sendFileBlock(userId, data, blockId, isCompleteFile) {
   var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice;
   var file = data['file'],
-    blockStart = blockId * 10493952,
-    chunkSize = 20496,
+    blockStart = blockId * blockSize,
     currentChunk = 0;
   var restSize = file.size - blockStart;
-  var totalChunk = Math.ceil((restSize > 10493952 ? 10493952 : restSize) / chunkSize);
+  var totalChunk = Math.ceil((restSize > blockSize ? blockSize : restSize) / chunkSize);
   readChunkOnLoad = function (e) {
     var message = {
       'chunk': e.target.result,
@@ -590,7 +594,7 @@ function sendFileBlock(userId, data, blockId, isCompleteFile) {
     if (currentChunk < totalChunk) {
       message['isLast'] = 0;
       dataChannels[userId].send(JSON.stringify(message));
-      console.log("send " + Math.ceil(currentChunk / totalChunk * 10000) / 100 + "% of this block ...");
+      // console.log("send " + Math.ceil(currentChunk / totalChunk * 10000) / 100 + "% of this block ...");
       readNext();
     }
     else {
@@ -605,41 +609,66 @@ function sendFileBlock(userId, data, blockId, isCompleteFile) {
   };
   readNext = function () {
     var fileReader = new FileReader();
-    // if (isCompleteFile)
-    //   fileReader.onload = readChunkOnLoad_complete;
-    // else
     fileReader.onload = readChunkOnLoad;
     fileReader.onerror = readChunkOnError;
     var start = currentChunk * chunkSize + blockStart,
       end = ((start + chunkSize) >= file.size) ? file.size : (start + chunkSize);
-    // console.log("start:"+start+" end:"+end+" size:"+(start-end).toString());
     fileReader.readAsDataURL(blobSlice.call(file, start, end));
   };
   readNext();
 }
 
 function receiveCompleteFile(message) {
-  console.log(message['chunk']);
   var fileId = message['id'];
   receiveFiles[fileId] = mergeArray(receiveFiles[fileId], dataURLtoBlob(message['chunk']));
-  if (message['isLast'])
-    saveFile(fileId, message['name']);
+  if (message['isLast']) {
+    saveFile(fileId, message['name'], receiveFiles[fileId].byteLength);
+  }
 }
 
 function receiveBlock(message) {
   var fileId = message['id'],
-    blockId = message['blockId'];
+    blockId = message['blockId'],
+    now = Date.parse(new Date()) / 1000;
   var messageData = dataURLtoBlob(message["chunk"]);
   delete message["chunk"];
-  receiveFiles[fileId][blockId] = mergeArray(receiveFiles[fileId][blockId], messageData);
-  delete messageData;
+  receiveFiles[fileId][blockId]['data'] = mergeArray(receiveFiles[fileId][blockId]['data'], messageData);
+  messageData = null;
+  mergingFiles[fileId]['currentSize'] += chunkSize;
+  setBarValue(fileId, (mergingFiles[fileId]['currentSize'] * 100 / mergingFiles[fileId]['size']));
+  var time = now - mergingFiles[fileId]['time'];
+  if (time) {
+    var sizeOfTime = mergingFiles[fileId]['currentSize'] - mergingFiles[fileId]['preSize'];
+    showSpeed(fileId, convertSize(sizeOfTime / time));
+    mergingFiles[fileId]['preSize'] = mergingFiles[fileId]['currentSize'];
+    mergingFiles[fileId]['time'] = Date.parse(new Date()) / 1000;
+  }
   if (message['isLast']) {
-    mergingFiles[fileId]['data'] = mergeArray(mergingFiles[fileId]['data'], receiveFiles[fileId][blockId]);
-    receiveFiles[fileId][blockId] = "merged";
-    mergingFiles[fileId]['count']++;
-    console.log("接受块：" + blockId + " , 当前共接收到 " + mergingFiles[fileId]['count'] + "块,共" + convertSize(mergingFiles[fileId]['data'].byteLength));
+    receiveFiles[fileId][blockId]['status'] = "complete";
+    if (blockId == 0) {
+      mergingFiles[fileId]['data'] = receiveFiles[fileId][blockId]['data'];
+      receiveFiles[fileId][blockId]['data'] = null;
+      receiveFiles[fileId][blockId]['status'] = "merged";
+      mergingFiles[fileId]['count']++;
+      // console.log("接受块：0, 当前共接收到 " + mergingFiles[fileId]['count'] + "块,共" + convertSize(mergingFiles[fileId]['data'].byteLength));
+    } else {
+      var completeBlockCount = 0;
+      for (var i = 0; i < blockId; i++) {
+        if (receiveFiles[fileId][i]['status'] == "merged")
+          completeBlockCount++;
+      }
+      console.log("completeBlockCount:" + completeBlockCount);
+      if (completeBlockCount == blockId) {
+        mergingFiles[fileId]['data'] = mergeArray(mergingFiles[fileId]['data'], receiveFiles[fileId][blockId]['data']);
+        receiveFiles[fileId][blockId]['status'] = "merged";
+        receiveFiles[fileId][blockId]['data'] = null;
+        mergingFiles[fileId]['count']++;
+        // console.log("接受块：" + blockId + " , 当前共接收到 " + mergingFiles[fileId]['count'] + "块,共" + convertSize(mergingFiles[fileId]['data'].byteLength));
+      }
+    }
+
     if (mergingFiles[fileId]['count'] == mergingFiles[fileId]['total']) {
-      saveMergeFile(fileId, message['name']);
+      saveMergeFile(fileId, message['name'], mergingFiles[fileId]['data'].byteLength);
     } else {
       for (var i = 0; i < receiveFiles[fileId].length; i++) {
         if (typeof(receiveFiles[fileId][i]) == "undefined") {
@@ -650,7 +679,9 @@ function receiveBlock(message) {
             "fileId": fileId,
             'blockId': i
           };
-          receiveFiles[fileId][i] = new Uint8Array();
+          receiveFiles[fileId][i] = {};
+          receiveFiles[fileId][i]['data'] = new Uint8Array();
+          receiveFiles[fileId][i]['status'] = 'receiving';
           dataChannels[message['from']].send(JSON.stringify(data));
           break;
         }
@@ -659,66 +690,33 @@ function receiveBlock(message) {
   }
 }
 
-function saveFile(id, fileName) {
-  var aLink = document.createElement('a');
-  // var blob = dataURLtoBlob(receiveFiles[id]);
-  var evt = document.createEvent("HTMLEvents");
-  evt.initEvent("click", false, false);
-  aLink.download = fileName;
-  aLink.href = window.URL.createObjectURL(new Blob([new Uint8Array(receiveFiles[id])]));
-  aLink.dispatchEvent(evt);
+function saveFile(id, fileName, fileSize) {
+  downloadComplete(id, fileName, fileSize);
+  saveAs(new Blob([new Uint8Array(receiveFiles[id])]), fileName);
   delete receiveFiles[id];
 }
 
 
-function saveMergeFile(id, fileName) {
-  var aLink = document.createElement('a');
-  // var blob = dataURLtoBlob(receiveFiles[id]);
-  var evt = document.createEvent("HTMLEvents");
-  evt.initEvent("click", false, false);
-  aLink.download = fileName;
-  aLink.href = window.URL.createObjectURL(new Blob([new Uint8Array(mergingFiles[id]['data'])]));
-  aLink.dispatchEvent(evt);
+function saveMergeFile(id, fileName, fileSize) {
+  downloadComplete(id, fileName, fileSize);
+  saveAs(new Blob([mergingFiles[id]['data']]), fileName);
   delete receiveFiles[id];
   delete mergingFiles[id];
 }
 
 function dataURLtoBlob(dataURL) {
-  // convert base64/URLEncoded data component to raw binary data held in a string
   var byteString;
   if (dataURL.split(',')[0].indexOf('base64') >= 0)
     byteString = atob(dataURL.split(',')[1]);
   else
     byteString = unescape(dataURL.split(',')[1]);
-  // separate out the mime component
-  // var mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-  // write the bytes of the string to a typed array
   var ia = new Uint8Array(byteString.length);
   for (var i = 0; i < byteString.length; i++) {
     ia[i] = byteString.charCodeAt(i);
   }
-  // return new Blob([ia], {
-  //   type: mimeString
-  // });
   return ia;
 }
 
-function dataURItoBlob1(dataURI) {
-  var byteString = atob(dataURI.split(',')[1]);
-
-  var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-
-  var ab = new ArrayBuffer(byteString.length);
-  var ia = new Uint8Array(ab);
-  for (var i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
-
-  // var bb = new BlobBuilder();
-  // bb.append(ab);
-  // return bb.getBlob(mimeString);
-  return ia;
-}
 
 /*********************************************************************************/
 function dataFormat(stamp) {
@@ -839,7 +837,7 @@ function handleChat(id,content) {
 
 function convertSize(size) {
   if(size<1000){
-    return size+"B";
+    return size.toFixed(1) + "B";
   }else{
     size /= 1024;//to KB
     if(size<1000){
@@ -861,14 +859,15 @@ function deleteFileById(id){
   $('#file-info').modal('hide')
 }
 
-function downloadFile(id, size) {
+function downloadFile(id, name, size) {
   var users = fileFrom[id];
   if (!users) {
     fileError("无此文件或无用户在线");
     return false;
   }
+  createDownloadingProcessBar(id, name, size);
   // single connect when file size <= 10MB
-  if (size <= 10493952) {
+  if (size <= blockSize) {
     if (!dataChannels[users[0]])
       start(1, users[0], 0, id, 'full');
     else {
@@ -882,21 +881,36 @@ function downloadFile(id, size) {
       dataChannels[users[0]].send(JSON.stringify(message));
     }
   } else {
-    var blocks = Math.ceil(size / 10493952);
-    mergingFiles[id] = {};
-    mergingFiles[id]['total'] = blocks;
-    mergingFiles[id]['data'] = new Uint8Array();
-    mergingFiles[id]['count'] = 0;
+    var blocks = Math.ceil(size / blockSize);
+    mergingFiles[id] = {
+      'total': blocks,
+      'data': new Uint8Array(),
+      'count': 0,
+      'size': size,
+      'preSize': 0,
+      'currentSize': 0,
+      'time': Date.parse(new Date()) / 1000
+    };
     //用户人数大于4时选择4个用户请求下载文件，小于4时请求所以用户
     if (users.length < 4) {
       receiveFiles[id] = new Array(blocks);
       var min = blocks < users.length ? blocks : users.length;
       for (var i = 0; i < min; i++) {
+        console.log('connect to ' + users[i]);
         if (!dataChannels[users[i]]) {
-          start(1, users[0], 0, id, i);
+          start(1, users[i], 0, id, i);
         }
         else {
-          //TODO 已有数据通道
+          var me = $("#ipt-userId").val();
+          var message = {
+            "from": me,
+            "fileId": id,
+            "tag": 'askBlock',
+            "blockId": i
+          };
+          receiveFiles[id][i] = {};
+          receiveFiles[id][i]['data'] = new Uint8Array();
+          dataChannels[users[i]].send(JSON.stringify(message));
         }
       }
     } else {

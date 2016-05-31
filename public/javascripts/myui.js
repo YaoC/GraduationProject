@@ -273,3 +273,66 @@ function fileError(text) {
     $("#file-alert-info").empty();
   },5000);
 }
+
+function createDownloadingProcessBar(fileId, fileName, size) {
+  var html = "<div id='downloadingBar-" + fileId + "' class=\"downloadingBar\">\
+                <label class=\"download-name\">" + fileName + "</label><span>&nbsp;&nbsp;&nbsp;&nbsp;大小：" + convertSize(size) + "&nbsp;&nbsp;&nbsp;&nbsp;传输速率：</span><span id=\"speed-" + fileId + "\">0B/s</span>\
+                <div class=\"row download-row\">\
+                  <div class=\"col-lg-11\">\
+                    <div class=\"progress\">\
+                      <div id='bar-" + fileId + "' role=\"progressbar\" aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"100\"  class=\"progress-bar progress-bar-striped active\">正在初始化...</div>\
+                    </div>\
+                  </div>\
+                  <div class=\"col-lg-1\">\
+                    <button onclick=\"cancelDownloadFile('" + fileId + "')\" class=\"btn btn-danger btn-xs\">取消</button>\
+                  </div>\
+                </div>\
+              </div>";
+  $("#downloading-content").append(html);
+}
+
+function showSpeed(id, speed) {
+  $("#speed-" + id).text(speed + '/s');
+}
+
+function setBarValue(id, value) {
+  $("#bar-" + id).css("width", Math.ceil(value) + '%');
+  $("#bar-" + id).text(value.toFixed(2) + '%');
+}
+
+function downloadComplete(fileId, fileName, size) {
+  console.log(size);
+  var html = "<div id='downloadBar-" + fileId + "' class=\"downloadingBar\">\
+                <label class=\"download-name\">" + fileName + "</label><span>&nbsp;&nbsp;&nbsp;&nbsp;大小：" + convertSize(size) + "</span>\
+                <div class=\"row download-row\">\
+                  <div class=\"col-lg-11\">\
+                    <div class=\"progress\">\
+                      <div role=\"progressbar\" aria-valuenow=\"99\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 100%\" class=\"progress-bar progress-bar-success progress-bar-striped\">下载完成</div>\
+                    </div>\
+                  </div>\
+                  <div class=\"col-lg-1\">\
+                    <button onclick=\"clearBar('" + fileId + "')\" class=\"btn btn-default btn-xs\">清除</button>\
+                  </div>\
+                </div>\
+              </div>";
+  $("#downloadingBar-" + fileId).remove();
+  $("#download-content").append(html);
+}
+
+function clearBar(id) {
+  $("#downloadBar-" + id).remove();
+}
+
+function test() {
+  createDownloadingProcessBar('111', 'test.jpg', 12345678);
+  var i = 0;
+  var id = window.setInterval(function () {
+    if (i <= 100)
+      setBarValue('111', i++);
+    else {
+      downloadComplete('111', 'test.jpg', 12345678);
+      window.clearInterval(id);
+    }
+  }, 100);
+}
+

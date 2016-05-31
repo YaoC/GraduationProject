@@ -11,6 +11,8 @@ block content
   script(src="/javascripts/myui.js",type="text/javascript")
   script(src="/javascripts/fileinput.min.js",type="text/javascript")
   script(src="/javascripts/fileinput_locale_zh.js",type="text/javascript")
+  script(src="/javascripts/FileSaver.min.js",type="text/javascript")
+
 
   //系统设置和登出
   form(action="signout" method="GET")
@@ -121,7 +123,7 @@ block content
           div(id="file-alert-info")
         //上传、查询
         div(class="modal-body")
-          div(class="row")
+          div(class="row" style="padding-bottom:10px;")
             div(class="col-md-6")
               form(onsubmit="return uploadFile()")
                 label(class="control-label") 上传文件
@@ -132,13 +134,30 @@ block content
                 input(class="form-control" placeholder="输入文件MD5值查找文件" id="ipt-md5")
                 label(id="search-file" class="input-group-addon" onclick="searchFile()")
                   span(class="glyphicon glyphicon-search" aria-hidden="true")
-        //查询结果
-        div(class="modal-body" id="fileSearchResult")
-        //下载中面板
-        div(class="modal-body")
-          label(id="downloading")
+          //查询结果
+          div(id="fileSearchResult")
+          //下载中面板
+          label(class="downloading" style="padding-bottom:10px;") 正在下载
+          div(class="downloading-panel" id="downloading-content")
+            //div(class="downloadingBar")
+            //  label(class="download-name") 111.txt
+            //  div(class="row download-row")
+            //    div(class="col-lg-11")
+            //      div(class="progress")
+            //        div(class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="99" aria-valuemin="0" aria-valuemax="100" style="width: 30%") 45%
+            //    div(class="col-lg-1")
+            //      button(class="btn btn-danger btn-xs" onclick="cancelDownloadFile(id)") 取消
 
-
+          label(class="downloading" style="padding-bottom:10px;") 下载完成
+          div(class="downloading-panel" id="download-content")
+            //div(class="downloadingBar")
+            //  label(class="download-name") 111.txt
+            //  div(class="row download-row")
+            //    div(class="col-lg-11")
+            //      div(class="progress")
+            //        div(class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="99" aria-valuemin="0" aria-valuemax="100" style="width: 100%") 下载完成
+            //    div(class="col-lg-1")
+            //      button(class="btn btn-default btn-xs" onclick="clearBar(id)") 清除
   //文件详细信息
   div(class="modal fade bs-example-modal-sm" id="file-info" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
     div(class="modal-dialog modal-sm")

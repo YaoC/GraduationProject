@@ -423,3 +423,27 @@ a:active{
   user-select: none;
   cursor: default;
 }
+
+.downloadingBar label {
+  font-size: small;
+}
+
+.downloadingBar span {
+  font-size: xx-small;
+}
+
+.download-name {
+  padding-left: 20px;
+}
+
+.downloading-panel {
+  max-height: 17vh;
+  overflow: auto;
+  overflow-x: hidden;
+  margin-bottom: 20px;
+}
+
+.download-row {
+  padding-left: 20px;
+  padding-right: 30px;
+}
