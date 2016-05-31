@@ -1,4 +1,12 @@
+var privateKey = null;
+var publicKey = null;
+var friendsKeys = {};
+
 $(document).ready(function () {
+  privateKey = $("#myPrivateKey").val();
+  publicKey = $("#myPublicKey").val();
+
+
   $("#ipt-pic").fileinput({
     language: 'zh',
     allowedFileExtensions : ['jpg', 'png','gif','jpeg'],

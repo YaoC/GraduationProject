@@ -15,6 +15,7 @@ var mergingFiles = {};
 const blockSize = 10493952;
 const chunkSize = 20496;
 
+
 var configuration = {
   'iceServers': [{
     // 'url': 'stun:stun.l.google.com:19302'
@@ -169,6 +170,13 @@ function setupChat(id, ischatChannel, fileId, blockId) {
     dataChannels[id].onopen = function () {
       addConnection(id);
       console.log('channel open');
+      var me = $("#ipt-userId").val();
+      var message = {
+        'from': me,
+        'tag': "rsaKey",
+        'key': publicKey
+      };
+      dataChannels[id].send(JSON.stringify(message));
     };
   } else {//file channel
     if (fileId) {
@@ -201,7 +209,7 @@ function setupChat(id, ischatChannel, fileId, blockId) {
     var message = JSON.parse(evt.data);
     switch (message['tag']) {
       case 'chat':
-        handleChat(id, message['content']);
+        handleChat(id, message);
         break;
       case 'askFile':
         sendSingleFile(id, message.fileId);
@@ -209,8 +217,10 @@ function setupChat(id, ischatChannel, fileId, blockId) {
       case 'fileToChat':
       {
         var connection = document.getElementById("friendsSession-" + id);
-        if (!connection)
+        if (!connection) {
           addConnection(id);
+          friendsKeys[id] = message['key'];
+        }
         break;
       }
       case 'completeFile':
@@ -228,6 +238,10 @@ function setupChat(id, ischatChannel, fileId, blockId) {
         receiveBlock(message);
         break;
       }
+      case 'rsaKey':
+      {
+        friendsKeys[id] = message['key'];
+      }
       default:
         console.log("a message from " + id);
     }
@@ -241,18 +255,6 @@ function setupChat(id, ischatChannel, fileId, blockId) {
     removeConnection(id);
   }
 }
-
-function send(id,msg) {
-
-	var message = {
-		'tag':'chat',
-		'content':msg
-	};
-	dataChannels[id].send(JSON.stringify(message));
-}
-
-
-
 
 
 function logError(error) {
@@ -779,7 +781,12 @@ function talkWith(id,name,pic) {
     var connection = document.getElementById("friendsSession-" + id);
     if (!connection) {
       addConnection(id);
-      var message = {'tag': 'fileToChat'};
+      var me = $("#ipt-userId").val();
+      var message = {
+        'from': me,
+        'tag': "fileToChat",
+        'key': publicKey
+      };
       dataChannels[id].send(JSON.stringify(message));
     }
   }else{
@@ -816,7 +823,20 @@ function sendMessage(id){
     var pic = $("#myPortrait").attr("src");
     var html = "<div class=\"row\"><div class=\"my-photo\"><img src=\""+pic+"\" class=\"img-rounded freinds-display\"/></div><div class=\"my-tag\">"+
       content+"</div></div>";
-    send(id,content);
+    var encrypt = new JSEncrypt();
+    encrypt.setPublicKey(friendsKeys[id]);
+    var contentSlice = Math.ceil(content.length / 80);
+    var content_encrypt = {};
+    for (var i = 0; i < contentSlice; i++) {
+      var start = i * 80,
+        end = (start + 80) > content.length ? content.length : start + 80;
+      content_encrypt[i] = encrypt.encrypt(content.substring(start, end));
+    }
+    content_encrypt['slice'] = contentSlice;
+    content_encrypt['tag'] = 'chat';
+    //TODO 储存聊天信息  content_encrypt
+    console.log(content_encrypt);
+    dataChannels[id].send(JSON.stringify(content_encrypt));
     $("#friendMessage"+id).text("[我]："+content.substring(0,15));
     $("#message-plain").append(html);
     $("#message-content").val("");
@@ -824,7 +844,16 @@ function sendMessage(id){
 }
 
 
-function handleChat(id,content) {
+function handleChat(id, content_encrypt) {
+  console.log(content_encrypt);
+  var decrypt = new JSEncrypt();
+  decrypt.setPrivateKey(privateKey);
+  var slice = parseInt(content_encrypt['slice']);
+  var content = "";
+  for (var i = 0; i < slice; i++) {
+    console.log(decrypt.decrypt(content_encrypt[i]));
+    content += decrypt.decrypt(content_encrypt[i]);
+  }
   $("#friendMessage"+id).text(content.substring(0,15));
   if($("#session").css("display")=="block"&&$("#session-id").val()==id){
     var pic = $("#friend-pic").val();
@@ -891,7 +920,7 @@ function downloadFile(id, name, size) {
       'currentSize': 0,
       'time': Date.parse(new Date()) / 1000
     };
-    //用户人数大于4时选择4个用户请求下载文件，小于4时请求所以用户
+    //用户人数大于4时选择4个用户请求下载文件，小于4时请求所有用户
     if (users.length < 4) {
       receiveFiles[id] = new Array(blocks);
       var min = blocks < users.length ? blocks : users.length;

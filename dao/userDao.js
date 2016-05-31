@@ -59,7 +59,7 @@ module.exports = {
             if(result) {
               var uid = result.insertId;
               redisDao.addNickName(uid,param.nickname);
-              var key = new NodeRSA({b: 512});
+              var key = new NodeRSA({b: 2048});
               var privateKey = key.exportKey("private");
               var publicKey = key.exportKey("public");
               connection.query($userInfo.insert, [uid,0,'1990-01-01','1234567890',privateKey,publicKey], function(err, result) {
