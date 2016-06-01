@@ -11,6 +11,7 @@ var fileFrom = {};
 var receiveFiles = {};
 var mergingFiles = {};
 
+var uploadFlag = {};
 //必须能被24整除
 const blockSize = 10493952;
 const chunkSize = 20496;
@@ -317,13 +318,15 @@ function addFile(){
 		return ;
 	}
 	var file = document.getElementById("file").files[0];
-	var fileName = file.name;
-  var fileSize = file.size;
 	if(!file){
 		console.log("No file !");
 		return false;
 	}
-	getMd5(file).then(function(md_5){
+  var fileName = file.name;
+  var fileSize = file.size;
+  var tempId = Date.parse(new Date());
+  showUploadProcess(tempId, fileName, fileSize);
+  getMd5(file, tempId).then(function (md_5) {
 		var data = {
 		'id': md_5,
       'name': fileName,
@@ -337,9 +340,14 @@ function addFile(){
 			var transaction = db.transaction(["files"], "readwrite");
 			transaction.onerror = function (event) {
 				console.log("Fail to add file",event.target.error);
+        fileError('文件上传失败, ' + event.target.error);
+        clearUploadBar(tempId);
       };
 			transaction.oncomplete = function (event) {
-				console.log("complete !");
+        // console.log("complete !");
+        showFileInfo();
+        uploadComplete(tempId, fileName);
+        fileSuccess('文件上传成功');
       };
 			var objectStore = transaction.objectStore("files");
 			var request = objectStore.add(data);
@@ -351,16 +359,21 @@ function addFile(){
                   'size': fileSize
                 };
 		    	socket.emit('addFile',fileInfo);
-        showFileInfo();
-          fileSuccess('文件上传成功');
       };
       request.onerror = function (e) {
         fileError('文件上传失败, '+e.target.error);
+        clearUploadBar(tempId);
       }
-		}	
-	});
+		}
+  }, function (info) {
+    fileError(info);
+  });
 }
 
+function stopUpload(tempId) {
+  uploadFlag[tempId] = true;
+  clearUploadBar(tempId);
+}
 
 /**
  *获取本地保存的文件信息
@@ -488,19 +501,23 @@ function deleteAll(){
 /**
  * 获取文件的MD5值
  * @return {[type]}
- */		
-function getMd5(file) {
+ */
+function getMd5(file, tempId) {
 	return new Promise(function (resolve,reject) {
 		// var file = document.getElementById("file").files[0];
+    uploadFlag[tempId] = false;
 		var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
       sliceSize = 2097152, // read in chunks of 2MB
       chunks = Math.ceil(file.size / sliceSize),
 		currentChunk = 0,
 		spark = new SparkMD5.ArrayBuffer(),
 		frOnload = function(e){
-			console.log("read "+Math.ceil(currentChunk/chunks*10000)/100+"% of this file ...");
+      if (uploadFlag[tempId])
+        reject("用户终止了上传");
+      // console.log("read "+Math.ceil(currentChunk/chunks*10000)/100+"% of this file ...");
 			spark.append(e.target.result); // append array buffer
 			currentChunk++;
+      setBarValue(tempId, Math.round(currentChunk / chunks * 10000) / 100);
 			if (currentChunk < chunks)
 				loadNext();
 			else{
@@ -768,9 +785,9 @@ function rejectFriendsAsk(friendId){
 
 socket.on('newFriend',function (info) {
   if(info){
-    var html = "<button class=\"content-btn btn btn-block\" onclick=\"talkWith("+info['id']+",'"+info['nickname']+"','"+info['portrait']+"')\" ><div class=\"list-left\"><img id=\"img"+info['id']+"\" src="+info["portrait"]
+    var html = "<button class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
       +" class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname"+info['id']+"\" class=\"content-header\">"+info["nickname"]
-      +"</div><div class=\"content-message\">"+info["motto"]+"</div></div></button>";
+      + "</div><div class=\"content-message\">" + (info["motto"] || "该用户无签名") + "</div></div></button>";
     $("#friends").append(html);
   }
 });

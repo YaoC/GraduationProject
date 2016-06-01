@@ -254,6 +254,7 @@ function searchFile(){
 }
 
 function uploadFile() {
+
   addFile();
   $('#file').fileinput('clear');
   return false;
@@ -277,9 +278,6 @@ function fileError(text) {
     "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">" +
     "<span aria-hidden=\"true\">&times;</span></button>"+
     "<strong>"+text+"</strong></div>");
-  window.setTimeout(function () {
-    $("#file-alert-info").empty();
-  },5000);
 }
 
 function createDownloadingProcessBar(fileId, fileName, size) {
@@ -309,7 +307,6 @@ function setBarValue(id, value) {
 }
 
 function downloadComplete(fileId, fileName, size) {
-  console.log(size);
   var html = "<div id='downloadBar-" + fileId + "' class=\"downloadingBar\">\
                 <label class=\"download-name\">" + fileName + "</label><span>&nbsp;&nbsp;&nbsp;&nbsp;大小：" + convertSize(size) + "</span>\
                 <div class=\"row download-row\">\
@@ -344,3 +341,31 @@ function test() {
   }, 100);
 }
 
+function showUploadProcess(tempId, fileName, size) {
+  var html = "<div id=\"upload-" + tempId + "\"class=\"downloadingBar\">\
+                <label id='upload-name-" + tempId + "' class=\"download-name\">正在上传：" + fileName + "</label><span>&nbsp;&nbsp;&nbsp;&nbsp;大小：" + convertSize(size) + "</span>\
+                <div class=\"row download-row\">\
+                  <div class=\"col-lg-11\">\
+                    <div class=\"progress\">\
+                      <div id=\"bar-" + tempId + "\" role=\"progressbar\" aria-valuenow=\"99\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 0%\" class=\"progress-bar progress-bar-striped active\">正在上传</div>\
+                    </div>\
+                  </div>\
+                  <div class=\"col-lg-1\">\
+                    <button id='btn-" + tempId + "' onclick=\"stopUpload(" + tempId + ")\" class=\"btn btn-danger btn-xs\">停止</button>\
+                  </div>\
+                </div>\
+              </div>";
+  $("#uploadProcess").append(html);
+}
+
+function uploadComplete(tempId, fileName) {
+  $("#btn-" + tempId).attr('onclick', "clearUploadBar(" + tempId + ")");
+  $("#btn-" + tempId).text("清除");
+  $("#upload-name-" + tempId).text("上传完成：" + fileName);
+  setBarValue(tempId, 100);
+  $("#bar-" + tempId).attr('class', "progress-bar progress-bar-success progress-bar-striped");
+}
+
+function clearUploadBar(id) {
+  $("#upload-" + id).remove();
+}
