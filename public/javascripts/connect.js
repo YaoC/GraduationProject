@@ -1,3 +1,4 @@
+var ME = 0;
 //保存所有与本地相连的peer connection， 键为对方id，值为RTCPeerConnection类型
 var peerConnections = {};
 //保存所有与本地连接的dataChannel,键为对方id,值为dataChannel类型
@@ -19,7 +20,6 @@ const chunkSize = 20496;
 
 var configuration = {
   'iceServers': [{
-    // 'url': 'stun:stun.l.google.com:19302'
     'url': 'stun:stun.sipgate.net'
   }]
 };
@@ -169,6 +169,7 @@ function start(isInitiator, friendsId, ischatChannel, fileId, blockId) {
 function setupChat(id, ischatChannel, fileId, blockId) {
   if (ischatChannel) {
     dataChannels[id].onopen = function () {
+      $("#myFriend-" + id).attr("disabled", false);
       addConnection(id);
       console.log('channel open');
       var me = $("#ipt-userId").val();
@@ -206,7 +207,6 @@ function setupChat(id, ischatChannel, fileId, blockId) {
     }
   }
   dataChannels[id].onmessage = function (evt) {
-    //TODO RSA加密解密 http://www-cs-students.stanford.edu/~tjw/jsbn/
     var message = JSON.parse(evt.data);
     switch (message['tag']) {
       case 'chat':
@@ -264,8 +264,9 @@ function logError(error) {
 
 
 /****************************IndexedDB 操作部分****************************************/
+var idbVersion = 0;
 var idbSuccess = function (event) {
-	console.log("MyFileDataBase created/open successfully !");
+  console.log("MyDatabase created/open successfully !");
 	var db = event.target.result;
 	var transaction = db.transaction(["files"], "readwrite");
 	var objectStore = transaction.objectStore("files");
@@ -281,33 +282,49 @@ var idbSuccess = function (event) {
       };
       socket.emit('addFile', data);
 		}
+    db.close();
 	}
 };
 var idbError = function (event) {
-	console.log("Fail to create/open MyFileDataBase: "+event.target.errorCode);
+  console.log("Fail to create/open MyDatabase: ", event.target.error.message);
 };
 /**
  * [初始化数据库]
  */
-$(document).ready(function() { 
+$(document).ready(function () {
+  ME = $("#ipt-userId").val();
 	if(!window.indexedDB) {
 		console.log("Sorry! Your browser don't support IndexedDB");
-		return ;
+    return false;
 	}
-	var request = indexedDB.open("MyFileDataBase",1);
-	request.onsuccess = idbSuccess;
-	request.onerror = idbError;
-	request.onupgradeneeded = function(event){
-		var db = event.target.result;
-		if (!db.objectStoreNames.contains('files')) {
-			db.createObjectStore('files', {
-				keyPath: "id"
-			});
-		}
+  var req = indexedDB.open("MyDatabase");
+  req.onerror = idbError;
+  req.onsuccess = function (e) {
+    var database = e.target.result;
+    idbVersion = parseInt(database.version);
+    database.close();
+    var request = indexedDB.open("MyDatabase", ++idbVersion);
+    request.onsuccess = idbSuccess;
+    request.onerror = idbError;
+    request.onupgradeneeded = function (event) {
+      var db = event.target.result;
+      if (!db.objectStoreNames.contains('files')) {
+        db.createObjectStore('files', {
+          keyPath: "id"
+        });
+      }
+      var table = 'RecordOf' + ME;
+      if (!db.objectStoreNames.contains(table)) {
+        var store = db.createObjectStore(table, {
+          autoIncrement: true
+        });
+        store.createIndex('friendIdIndex', 'friendId', {unique: false});
+        console.log("create Chat Record of " + ME);
+      }
+    };
+  };
 
-	};
-	
-}); 
+});
 
 /**
  * [addFile 用户将自己的一个文件的文件信息保存到本地数据库中供其它用户下载]
@@ -333,7 +350,7 @@ function addFile(){
 		'file': file
 		};
 		console.log(data);
-		var req = indexedDB.open("MyFileDataBase",1);
+    var req = indexedDB.open("MyDatabase");
 		req.onerror = idbError;
 		req.onsuccess = function (event) {
 			db = event.target.result;
@@ -381,7 +398,7 @@ function stopUpload(tempId) {
  */
 function getFiles() {
 	return new Promise(function (resolve,reject) {
-		var request = window.indexedDB.open("MyFileDataBase", 1);
+    var request = window.indexedDB.open("MyDatabase");
 		request.onerror = function(e) {
 			console.log(e.currentTarget.error.message);
       reject("Error in getFiles !");
@@ -407,7 +424,7 @@ function getFiles() {
 
 function getFile(id) {
   return new Promise(function (resolve,reject){
-    var request = window.indexedDB.open("MyFileDataBase", 1);
+    var request = window.indexedDB.open("MyDatabase");
     request.onerror = function(e) {
       console.log(e.currentTarget.error.message);
       reject("Error in getFile !");
@@ -452,7 +469,7 @@ function fileDetail(id){
  * @param  {[type]} id [MD5值]
  */
 function deleteFile(id) {
-	var request = window.indexedDB.open("MyFileDataBase", 1);
+  var request = window.indexedDB.open("MyDatabase");
 	request.onerror = function(e) {
 		console.log(e.currentTarget.error.message);
 	};
@@ -478,7 +495,7 @@ function deleteFile(id) {
  * [deleteAll 删除所有文件信息]
  */
 function deleteAll(){
-	var request = window.indexedDB.open("MyFileDataBase", 1);
+  var request = window.indexedDB.open("MyDatabase");
 	request.onerror = function(e) {
 		console.log(e.currentTarget.error.message);
 	};
@@ -495,6 +512,84 @@ function deleteAll(){
 		}
 	};				
 }
+
+function deleteRecordOfUser(userId) {
+  var request = indexedDB.open("MyDatabase", ++idbVersion);
+  request.onupgradeneeded = function (e) {
+    var db = e.target.result;
+    if (db.objectStoreNames.contains('RecordOf' + userId)) {
+      db.deleteObjectStore('RecordOf' + userId);
+      console.log("delete chat record of " + userId);
+    }
+  };
+  request.onerror = idbError;
+}
+function addChatRecord(MyId, friendId, record) {
+  var req = indexedDB.open("MyDatabase");
+  req.onerror = idbError;
+  req.onsuccess = function (event) {
+    db = event.target.result;
+    var table = "RecordOf" + MyId;
+    var transaction = db.transaction([table], "readwrite");
+    transaction.onerror = function (event) {
+      console.log("储存聊天记录时发生错误：" + event.target.error.message);
+    };
+    var objectStore = transaction.objectStore(table);
+    record.friendId = friendId;
+    var request = objectStore.add(record);
+    request.onerror = function (event) {
+      console.log("储存聊天记录时发生错误：" + event.target.error.message);
+    }
+  }
+}
+
+function getChatRecords(MyId, friendId, start) {
+  return new Promise(function (resolve, reject) {
+    var request = window.indexedDB.open("MyDatabase");
+    request.onerror = function (e) {
+      console.log(e.target.error.message);
+      reject("Error in showChatRecords !");
+    };
+    request.onsuccess = function (e) {
+      try {
+        var db = e.target.result,
+          table = "RecordOf" + MyId,
+          transaction = db.transaction([table], "readonly"),
+          store = transaction.objectStore(table),
+          index = store.index("friendIdIndex"),
+          advancing = start * 10,
+          records = [],
+          count = 0,
+          req = index.openCursor(friendId, "prev");
+        req.onsuccess = function (event) {
+          var cursor = event.target.result;
+          if (advancing > 0) {
+            cursor.advance(advancing);
+            advancing = false;
+          } else {
+            if (cursor && count < 10) {
+              records.push(cursor.value);
+              count++;
+              cursor.continue();
+            } else {
+              if (records.length)
+                resolve(records);
+              else
+                reject(0);
+            }
+          }
+        };
+        transaction.onerror = function (event) {
+          console.log("读取聊天记录时发生错误：" + event.target.error.message);
+        };
+      } catch (error) {
+        console.log(error.name + " " + error.message + " " + error.code);
+        reject("Error in showChatRecords !");
+      }
+    }
+  });
+}
+
 
 /**************************************文件操作部分**********************************************/
 
@@ -785,7 +880,7 @@ function rejectFriendsAsk(friendId){
 
 socket.on('newFriend',function (info) {
   if(info){
-    var html = "<button class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
+    var html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
       +" class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname"+info['id']+"\" class=\"content-header\">"+info["nickname"]
       + "</div><div class=\"content-message\">" + (info["motto"] || "该用户无签名") + "</div></div></button>";
     $("#friends").append(html);
@@ -807,6 +902,7 @@ function talkWith(id,name,pic) {
       dataChannels[id].send(JSON.stringify(message));
     }
   }else{
+    $("#myFriend-" + id).attr("disabled", "disabled");
     join(id);
   }
 }
@@ -820,6 +916,8 @@ function openSession(id) {
   $("#message-send").attr("onclick","sendMessage("+id+")");
   var pic = $("#img"+id).attr("src");
   $("#friend-pic").val(pic);
+  $("#message-plain").empty();
+  showChatRecords(id, 0);
 }
 
 function addConnection(id) {
@@ -838,47 +936,71 @@ function sendMessage(id){
   var content = $("#message-content").val();
   if(content){
     var pic = $("#myPortrait").attr("src");
-    var html = "<div class=\"row\"><div class=\"my-photo\"><img src=\""+pic+"\" class=\"img-rounded freinds-display\"/></div><div class=\"my-tag\">"+
+    var htmlId = 'myMessage-' + Date.parse(new Date());
+    var html = "<div id='" + htmlId + "' class=\"row\" style=\"opacity: 0;\"><div class=\"my-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"my-tag\">" +
       content+"</div></div>";
     var encrypt = new JSEncrypt();
+    var myEncrypt = new JSEncrypt();
     encrypt.setPublicKey(friendsKeys[id]);
+    myEncrypt.setPublicKey(publicKey);
     var contentSlice = Math.ceil(content.length / 80);
+    //发送给对方的加密信息（用对方公钥加密）
     var content_encrypt = {};
+    //我自己储存的加密信息（用我自己的公钥加密）
+    var myContent = {};
     for (var i = 0; i < contentSlice; i++) {
       var start = i * 80,
         end = (start + 80) > content.length ? content.length : start + 80;
       content_encrypt[i] = encrypt.encrypt(content.substring(start, end));
+      myContent[i] = myEncrypt.encrypt(content.substring(start, end));
     }
     content_encrypt['slice'] = contentSlice;
     content_encrypt['tag'] = 'chat';
-    //TODO 储存聊天信息  content_encrypt
-    console.log(content_encrypt);
+    // console.log(content_encrypt);
     dataChannels[id].send(JSON.stringify(content_encrypt));
+    //储存聊天信息  content_encrypt
+    //content_encrypt['owner'] 1:我发给对方的信息 0:对方发给我的信息
+    myContent['owner'] = 1;
+    myContent['slice'] = contentSlice;
+    addChatRecord(ME, id, myContent);
     $("#friendMessage"+id).text("[我]："+content.substring(0,15));
     $("#message-plain").append(html);
     $("#message-content").val("");
+    $("#" + htmlId).animate({opacity: 1}, 3000);
+    jumpToBottom();
   }
 }
 
 
 function handleChat(id, content_encrypt) {
-  console.log(content_encrypt);
+  // console.log(content_encrypt);
   var decrypt = new JSEncrypt();
   decrypt.setPrivateKey(privateKey);
+  var encrypt = new JSEncrypt();
+  encrypt.setPublicKey(publicKey);
   var slice = parseInt(content_encrypt['slice']);
   var content = "";
+  var record = {};
   for (var i = 0; i < slice; i++) {
-    console.log(decrypt.decrypt(content_encrypt[i]));
-    content += decrypt.decrypt(content_encrypt[i]);
+    // console.log(decrypt.decrypt(content_encrypt[i]));
+    var chunk = decrypt.decrypt(content_encrypt[i]);
+    content += chunk;
+    record[i] = encrypt.encrypt(chunk);
   }
   $("#friendMessage"+id).text(content.substring(0,15));
   if($("#session").css("display")=="block"&&$("#session-id").val()==id){
     var pic = $("#friend-pic").val();
-    var html = "<div class=\"row\"><div class=\"friends-photo\"><img src=\""+pic+"\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">"+content+"</div></div>";
+    var htmlId = "friendsMsg-" + Date.parse(new Date());
+    var html = "<div id='" + htmlId + "' class=\"row\" style=\"opacity: 0;\"><div class=\"friends-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">" + content + "</div></div>";
     $("#message-plain").append(html);
-  }else{
-    //TODO 储存到Indexed DB
+    showReturnBottom();
+    $("#" + htmlId).animate({opacity: 1}, 3000);
   }
+  //储存聊天信息到Indexed DB
+  record['owner'] = 0;
+  record['slice'] = slice;
+  addChatRecord(ME, id, record);
+
 }
 
 function convertSize(size) {

@@ -14,6 +14,9 @@ block content
   script(src="/javascripts/FileSaver.min.js",type="text/javascript")
   script(src="/javascripts/jsencrypt.min.js",type="text/javascript")
 
+  //测试
+  script(src="/javascripts/test.js",type="text/javascript")
+
 
   //系统设置和登出
   form(action="signout" method="GET")
@@ -335,6 +338,7 @@ block content
             button(onclick="removeSession()" class="right-icon")
               span(class="glyphicon glyphicon-remove" aria-hidden="true" )
           div(class="window-main" id="message-plain")
+
             //对方消息
             //div(class="row")
             //  div(class="friends-photo")
@@ -345,12 +349,11 @@ block content
             //  div(class="my-photo")
             //    img(class="img-rounded freinds-display" src="#{userInfo.display}")
             //  div(class="my-tag")
-
           div(class="window-bottom")
             div(class="form-horizontal")
               div(class="form-group" style="margin-bottom:5px;")
                 div(class="col-lg-10" style="padding-right:0px;")
-                  input(type="text" class="form-control" id="message-content")
+                  input(type="text" class="form-control" id="message-content" onfocus="jumpToBottom()")
                 div(class="col-lg-2" style="padding-left:25px;padding-right:5px;")
                   button(type="button" class="btn btn-primary" id="message-send") 发送
         //聊天窗口结束

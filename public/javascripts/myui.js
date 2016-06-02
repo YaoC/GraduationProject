@@ -328,19 +328,6 @@ function clearBar(id) {
   $("#downloadBar-" + id).remove();
 }
 
-function test() {
-  createDownloadingProcessBar('111', 'test.jpg', 12345678);
-  var i = 0;
-  var id = window.setInterval(function () {
-    if (i <= 100)
-      setBarValue('111', i++);
-    else {
-      downloadComplete('111', 'test.jpg', 12345678);
-      window.clearInterval(id);
-    }
-  }, 100);
-}
-
 function showUploadProcess(tempId, fileName, size) {
   var html = "<div id=\"upload-" + tempId + "\"class=\"downloadingBar\">\
                 <label id='upload-name-" + tempId + "' class=\"download-name\">正在上传：" + fileName + "</label><span>&nbsp;&nbsp;&nbsp;&nbsp;大小：" + convertSize(size) + "</span>\
@@ -368,4 +355,94 @@ function uploadComplete(tempId, fileName) {
 
 function clearUploadBar(id) {
   $("#upload-" + id).remove();
+}
+
+
+function showChatRecords(id, start) {
+  getChatRecords(ME, id, parseInt(start)).then(function (records) {
+    var decrypt = new JSEncrypt();
+    decrypt.setPrivateKey(privateKey);
+    var myPic = $("#myPortrait").attr("src");
+    var pic = $("#img" + id).attr("src");
+    var html;
+    var size = records.length;
+    for (var i = 0; i < size; i++) {
+      var record = records[i];
+      var content = "";
+      for (var j = 0; j < record['slice']; j++) {
+        content += decrypt.decrypt(record[j]);
+      }
+      if (record['owner'] == 1) {
+        html = "<div class=\"row\"><div class=\"my-photo\"><img src=\"" + myPic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"my-tag\">" +
+          content + "</div></div>";
+      } else {
+        html = "<div class=\"row\"><div class=\"friends-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">" + content + "</div></div>";
+      }
+      $("#message-plain").prepend(html);
+    }
+    if (start == 0) {
+      jumpToBottom();
+    } else {
+      $("#getMore").remove();
+    }
+    if (size < 10) {
+      noMoreRecord();
+    } else {
+      iconForGetMore();
+      setNextRecords(id, ++start);
+    }
+  }, function (error) {
+    console.log(error);
+    noMoreRecord();
+  });
+}
+
+
+function jumpToBottom() {
+  var h = $("#message-plain")[0].scrollHeight + "px";
+  $("#message-plain").animate({scrollTop: h}, 2000);
+}
+
+function iconForGetMore() {
+  var html = "<div id=\"getMore\" onmouseover='showGetMoreText()' onmouseout='showGetMoreIcon()' >\
+              <button><span id=\"getMoreText\" style='display: none'>加载更多</span><span id=\"getMoreIcon\" class=\"glyphicon glyphicon-menu-up\"></span></button>\
+            </div>";
+  $("#message-plain").prepend(html);
+}
+
+function showGetMoreText() {
+  $("#getMoreIcon").css("display", "none");
+  $("#getMoreText").removeAttr("style");
+}
+
+function showGetMoreIcon() {
+  $("#getMoreText").css("display", "none");
+  $("#getMoreIcon").removeAttr("style");
+}
+
+function setNextRecords(id, page) {
+  $("#getMore").attr('onclick', "showChatRecords(" + id + "," + page + ")");
+}
+
+function noMoreRecord() {
+  $("#getMore").remove();
+  var html = "<div id=\"getMore\">\
+              <button><span id=\"getMoreText\" >无更多记录</span></button>\
+            </div>";
+  $("#message-plain").prepend(html);
+
+}
+
+function showReturnBottom() {
+  var html = "<div id=\"top-window\" onclick=\"removeReturnBottom()\">NEW</div>";
+  $("#message-plain").after(html);
+  $("#top-window").animate({opacity: 1}, 2000);
+}
+
+function removeReturnBottom() {
+  $("#top-window").animate({opacity: 0}, 2000);
+  jumpToBottom();
+  setTimeout(function () {
+    $("#top-window").remove();
+  }, 2000);
 }

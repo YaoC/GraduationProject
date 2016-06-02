@@ -11,12 +11,16 @@ a {
   text-decoration:none;
 }
 
-label {
+img, label, span {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   cursor: default;
+}
+
+button {
+  outline: none !important;
 }
 
 a:visited{
@@ -39,14 +43,6 @@ a:active{
 
 .main{
   padding-top: 10px;
-}
-
-.menu{
-
-}
-
-.window{
-
 }
 
 /*主菜单标题*/
@@ -94,7 +90,7 @@ a:active{
 .window-main{
   min-height: 64vh;
   max-height: 64vh;
-  padding: 15px 10px 10px 0;
+  padding: 10px 10px 10px 0;
   background-color: rgba(248,248,248,0.4);
   overflow-y: auto;
   overflow-x: hidden;
@@ -111,6 +107,9 @@ a:active{
   background-color: #8c8c8c;
 }
 
+#myPortrait {
+  cursor: pointer;
+}
 
 .icon-size{
   font-size: 10px;
@@ -446,4 +445,48 @@ a:active{
 .download-row {
   padding-left: 20px;
   padding-right: 30px;
+}
+
+#getMore {
+  cursor: pointer;
+  text-align: center;
+  padding-bottom: 10px;
+  opacity: 0.8;
+}
+
+#getMore button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+#getMoreText {
+  cursor: pointer;
+  font-size: smaller;
+}
+
+#getMoreIcon {
+  cursor: pointer;
+}
+
+#top-window {
+  position: absolute;
+  padding-top: 11px;
+  font-size: x-small;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  border-radius: 50%;
+  top: 64vh;
+  left: 2vw;
+  z-index: 10;
+  height: 34px;
+  width: 34px;
+  cursor: pointer;
+  background-color: lightpink;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  opacity: 0;
 }
