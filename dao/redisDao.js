@@ -10,8 +10,19 @@ module.exports = {
     client.sadd("onlineUsers", uid);
 	},
 	isUserOnline: function (uid) {
-		return client.sismember("onlineUsers", uid);
+    return new Promise(function (resolve, reject) {
+      client.sismember("onlineUsers", uid, function (err, isOnline) {
+        resolve(isOnline);
+      });
+    });
 	},
+  getAllOnlineUsers: function () {
+    return new Promise(function (resolve, reject) {
+      client.smembers("onlineUsers", function (err, replies) {
+        resolve(replies);
+      });
+    });
+  },
 	userOffline: function (uid) {
     client.srem("onlineUsers", uid);
 	},

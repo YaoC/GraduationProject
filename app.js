@@ -116,8 +116,14 @@ io.on('connection', function(socket) {
       if(data.length){
         data.forEach(function (user) {
           redisDao.getFriendInfo(user).then(function (info) {
-            socket.emit('newFriend',info);
+            redisDao.isUserOnline(info['id']).then(function (isOnline) {
+              info['isOnline'] = isOnline;
+              socket.emit('newFriend', info);
+            });
           });
+          if (sockets[user]) {
+            sockets[user].emit("imOnline", userId);
+          }
         });
       }
     });
@@ -135,47 +141,59 @@ io.on('connection', function(socket) {
     });
   }
 
-     
-	socket.on('letsTalk',function(data){
+  socket.on('letsTalk',function(data){
     /**
      * [friendsId 希望建立连接的对方用户id]
      */
-		var friendsId = parseInt(data['to']);
-			if (redisDao.isUserOnline(friendsId)) {
-        var message = {
-          'from': userId,
-          'description': data['description'],
-          'isChat': data['isChat']
-        };
-				sockets[friendsId].emit('offer',message);
-			}
+    var friendsId = parseInt(data['to']);
+    if (sockets[friendsId]) {
+      var message = {
+        'from': userId,
+        'description': data['description'],
+        'isChat': data['isChat']
+      };
+      sockets[friendsId].emit('offer', message);
+    }
 	});
 
 	socket.on('okLetsTalk',function (data) {
 		var friendsId = parseInt(data['to']);
-      if (redisDao.isUserOnline(friendsId)) {
-        var message = {
-          'from': userId,
-          'description':data['description']
-        };
-		    sockets[friendsId].emit('answer',message);
-      }
+    if (sockets[friendsId]) {
+      var message = {
+        'from': userId,
+        'description': data['description']
+      };
+      sockets[friendsId].emit('answer', message);
+    }
 	});
-
 
 	socket.on('candidate',function(data){
 		var friendsId = parseInt(data['to']);
-    var message = {
-      'from':userId,
-      'candidate':data['candidate']
-    };
-		sockets[friendsId].emit('candidate',message);	
+    if (sockets[friendsId]) {
+      var message = {
+        'from': userId,
+        'candidate': data['candidate']
+      };
+      sockets[friendsId].emit('candidate', message);
+    }
 	});
 
 	socket.on('disconnect', function(){
-        redisDao.deleteAllFileByUser(userId);
-        redisDao.userOffline(userId);
-		delete(sockets[userId]);
+    //告诉我的朋友我下线了
+    redisDao.getFriends(userId).then(function (data) {
+      if (data.length) {
+        data.forEach(function (user) {
+          if (sockets[user]) {
+            sockets[user].emit("imOffline", userId);
+          }
+        });
+      }
+    });
+    //删除我在服务器储存的文件信息
+    redisDao.deleteAllFileByUser(userId);
+    //从在线用户中将我移除
+    redisDao.userOffline(userId);
+    delete sockets[userId];
 		console.log("disconnected");
 	});
 
@@ -205,18 +223,18 @@ io.on('connection', function(socket) {
 
 
   socket.on('addFriends',function (friendId) {
-      if(userId!=friendId){
-        //将自己的id添加到对方的好友请求列表中
-        redisDao.addFriendsAsk(friendId,userId);
-        //对方在线则立即告知
-        if (redisDao.isUserOnline(friendId)){
-          var message = {
-            'id':userId,
-            'name': socket.request.session.userName
-          };
-          sockets[friendId].emit('friendsAsk',message);
-        }
+    if (userId != friendId) {
+      //将自己的id添加到对方的好友请求列表中
+      redisDao.addFriendsAsk(friendId, userId);
+      //对方在线则立即告知
+      if (sockets[friendId]) {
+        var message = {
+          'id': userId,
+          'name': socket.request.session.userName
+        };
+        sockets[friendId].emit('friendsAsk', message);
       }
+    }
   });
 
   socket.on('acceptFriendsAsk',function (friendId) {

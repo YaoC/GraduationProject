@@ -109,6 +109,23 @@ socket.on("searchFileError", function (error) {
   fileError("未找到此文件");
 });
 
+socket.on("imOnline", function (id) {
+  // console.log(id+" is online");
+  $("#myFriend-" + id).removeClass("offline");
+  $("#onlineTag-" + id).text("[在线]");
+
+
+});
+
+socket.on('imOffline', function (id) {
+  // console.log(id+" is offline");
+  delete(dataChannels[id]);
+  delete(peerConnections[id]);
+  connections.splice(id, 1);
+  removeConnection(id);
+  $("#myFriend-" + id).addClass("offline");
+  $("#onlineTag-" + id).text("[离线]");
+});
 
 /**************************RTCPeerConnection********************************/
 
@@ -130,32 +147,33 @@ function start(isInitiator, friendsId, ischatChannel, fileId, blockId) {
 				socket.emit('candidate',message);
 		}
 	};
+
   	// let the 'negotiationneeded' event trigger offer generation
-  	pc.onnegotiationneeded = function () {
-  		console.log('negotiationneeded event ');
-    		pc.createOffer().then(function (offer) {
-    			console.log(offer);
-          return pc.setLocalDescription(offer);
-    		})
-    		.then(function () {
-    			if (friendsId) {
-		  		var message = {
-	    				'to':friendsId,
+  pc.onnegotiationneeded = function () {
+    console.log('negotiationneeded event ');
+    pc.createOffer().then(function (offer) {
+      console.log(offer);
+      return pc.setLocalDescription(offer);
+    })
+      .then(function () {
+        if (friendsId) {
+          var message = {
+            'to': friendsId,
             'description': pc.localDescription,
             'isChat': ischatChannel
-	    			};
-	    			socket.emit('letsTalk',message);
-  			}
-    		})
-    		.catch(logError);
-  	};
-  	if(isInitiator){
-		// create data channel and setup chat
-		dataChannel = pc.createDataChannel("chat");
-		dataChannels[friendsId] = dataChannel;
-      setupChat(friendsId, ischatChannel, fileId, blockId);
-      if (ischatChannel)
-        openSession(friendsId);
+          };
+          socket.emit('letsTalk', message);
+        }
+      })
+      .catch(logError);
+  };
+  if (isInitiator) {
+    // create data channel and setup chat
+    dataChannel = pc.createDataChannel("chat");
+    dataChannels[friendsId] = dataChannel;
+    setupChat(friendsId, ischatChannel, fileId, blockId);
+    if (ischatChannel)
+      openSession(friendsId);
 	} else {
 		// setup chat on incoming data channel
 		pc.ondatachannel = function (evt) {
@@ -169,7 +187,6 @@ function start(isInitiator, friendsId, ischatChannel, fileId, blockId) {
 function setupChat(id, ischatChannel, fileId, blockId) {
   if (ischatChannel) {
     dataChannels[id].onopen = function () {
-      $("#myFriend-" + id).attr("disabled", false);
       addConnection(id);
       console.log('channel open');
       var me = $("#ipt-userId").val();
@@ -248,13 +265,15 @@ function setupChat(id, ischatChannel, fileId, blockId) {
     }
 
   };
-  dataChannels[id].onclose = function () {
+  var closed = function () {
     delete(dataChannels[id]);
     delete(peerConnections[id]);
     connections.splice(id, 1);
     console.log(id + ' disconnected !');
     removeConnection(id);
-  }
+  };
+  dataChannels[id].onclose = closed;
+  dataChannels[id].onerror = closed;
 }
 
 
@@ -880,9 +899,16 @@ function rejectFriendsAsk(friendId){
 
 socket.on('newFriend',function (info) {
   if(info){
-    var html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
-      +" class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname"+info['id']+"\" class=\"content-header\">"+info["nickname"]
-      + "</div><div class=\"content-message\">" + (info["motto"] || "该用户无签名") + "</div></div></button>";
+    var html;
+    if (info['isOnline']) {
+      html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
+        + " class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname" + info['id'] + "\" class=\"content-header\">" + info["nickname"]
+        + "</div><div class=\"content-message\"><span id='onlineTag-" + info['id'] + "'>[在线]</span>" + (info["motto"] || "该用户无签名") + "</div></div></button>";
+    } else {
+      html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block offline\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
+        + " class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname" + info['id'] + "\" class=\"content-header\">" + info["nickname"]
+        + "</div><div class=\"content-message\"><span id='onlineTag-" + info['id'] + "'>[离线]</span>" + (info["motto"] || "该用户无签名") + "</div></div></button>";
+    }
     $("#friends").append(html);
   }
 });
@@ -899,10 +925,15 @@ function talkWith(id,name,pic) {
         'tag': "fileToChat",
         'key': publicKey
       };
-      dataChannels[id].send(JSON.stringify(message));
+      try {
+        dataChannels[id].send(JSON.stringify(message));
+      } catch (error) {
+        console.log(error);
+        alertInfoWarning("无法与用户" + id + "建立连接，请稍后再试");
+        return false;
+      }
     }
   }else{
-    $("#myFriend-" + id).attr("disabled", "disabled");
     join(id);
   }
 }
@@ -934,6 +965,7 @@ function removeConnection(id) {
 
 function sendMessage(id){
   var content = $("#message-content").val();
+  $("#message-content").val("");
   if(content){
     var pic = $("#myPortrait").attr("src");
     var htmlId = 'myMessage-' + Date.parse(new Date());
@@ -957,7 +989,13 @@ function sendMessage(id){
     content_encrypt['slice'] = contentSlice;
     content_encrypt['tag'] = 'chat';
     // console.log(content_encrypt);
-    dataChannels[id].send(JSON.stringify(content_encrypt));
+    try {
+      dataChannels[id].send(JSON.stringify(content_encrypt));
+    } catch (error) {
+      console.log(error);
+      alertInfoWarning("无法与用户" + id + "建立连接，请稍后再试");
+      return false;
+    }
     //储存聊天信息  content_encrypt
     //content_encrypt['owner'] 1:我发给对方的信息 0:对方发给我的信息
     myContent['owner'] = 1;
@@ -965,7 +1003,6 @@ function sendMessage(id){
     addChatRecord(ME, id, myContent);
     $("#friendMessage"+id).text("[我]："+content.substring(0,15));
     $("#message-plain").append(html);
-    $("#message-content").val("");
     $("#" + htmlId).animate({opacity: 1}, 3000);
     jumpToBottom();
   }
