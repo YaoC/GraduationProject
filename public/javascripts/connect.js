@@ -188,6 +188,9 @@ function setupChat(id, ischatChannel, fileId, blockId) {
   if (ischatChannel) {
     dataChannels[id].onopen = function () {
       addConnection(id);
+      if (id == $("#session-id").val()) {
+        checkConnection(id);
+      }
       console.log('channel open');
       var me = $("#ipt-userId").val();
       var message = {
@@ -270,7 +273,11 @@ function setupChat(id, ischatChannel, fileId, blockId) {
     delete(peerConnections[id]);
     connections.splice(id, 1);
     console.log(id + ' disconnected !');
+    if (id == $("#session-id").val()) {
+      checkConnection(id);
+    }
     removeConnection(id);
+
   };
   dataChannels[id].onclose = closed;
   dataChannels[id].onerror = closed;
@@ -532,6 +539,7 @@ function deleteAll(){
 	};				
 }
 
+//删除用户的所有聊天记录
 function deleteRecordOfUser(userId) {
   var request = indexedDB.open("MyDatabase", ++idbVersion);
   request.onupgradeneeded = function (e) {
@@ -543,6 +551,32 @@ function deleteRecordOfUser(userId) {
   };
   request.onerror = idbError;
 }
+
+//删除用户与某个好友的聊天记录
+function deleteMessageByUser(myId, friendId) {
+  $('#confirm').modal('hide');
+  var request = indexedDB.open("MyDatabase", idbVersion);
+  request.onsuccess = function (e) {
+    var db = e.target.result,
+      table = "RecordOf" + myId,
+      transaction = db.transaction(table, "readwrite"),
+      store = transaction.objectStore(table),
+      index = store.index("friendIdIndex"),
+      req = index.openCursor(friendId);
+    req.onsuccess = function () {
+      var cursor = event.target.result;
+      if (cursor) {
+        store.delete(cursor.primaryKey);
+        cursor.continue();
+      } else {
+        clearWindow(friendId);
+        alertInfoSuccess("聊天记录删除成功！");
+      }
+    }
+  };
+  request.onerror = idbError;
+}
+
 function addChatRecord(MyId, friendId, record) {
   var req = indexedDB.open("MyDatabase");
   req.onerror = idbError;
@@ -901,11 +935,11 @@ socket.on('newFriend',function (info) {
   if(info){
     var html;
     if (info['isOnline']) {
-      html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
+      html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ")\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
         + " class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname" + info['id'] + "\" class=\"content-header\">" + info["nickname"]
         + "</div><div class=\"content-message\"><span id='onlineTag-" + info['id'] + "'>[在线]</span>" + (info["motto"] || "该用户无签名") + "</div></div></button>";
     } else {
-      html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block offline\" onclick=\"talkWith(" + info['id'] + ",'" + info['nickname'] + "','" + info['portrait'] + "')\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
+      html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block offline\" onclick=\"talkWith(" + info['id'] + ")\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
         + " class=\"img-rounded freinds-display\"/></div><div class=\"list-right\"><div id=\"nickname" + info['id'] + "\" class=\"content-header\">" + info["nickname"]
         + "</div><div class=\"content-message\"><span id='onlineTag-" + info['id'] + "'>[离线]</span>" + (info["motto"] || "该用户无签名") + "</div></div></button>";
     }
@@ -913,7 +947,15 @@ socket.on('newFriend',function (info) {
   }
 });
 
-function talkWith(id,name,pic) {
+function talkWith(id) {
+  var pic = $("#img" + id).attr('src');
+  var name = $("#nickname" + id).text();
+  $("#myFriend-" + id).attr("onclick", "openSession(" + id + ",'" + name + "','" + pic + "')");
+  window.setTimeout(function () {
+    if (dataChannels[id] && dataChannels[id].readyState != "open") {
+      dataChannels[id].close();
+    }
+  }, 5000);
   if(dataChannels[id]){
     openSession(id,name,pic);
     var connection = document.getElementById("friendsSession-" + id);
@@ -930,6 +972,7 @@ function talkWith(id,name,pic) {
       } catch (error) {
         console.log(error);
         alertInfoWarning("无法与用户" + id + "建立连接，请稍后再试");
+        delete dataChannels[id];
         return false;
       }
     }
@@ -943,8 +986,11 @@ function openSession(id) {
   var name = $("#nickname"+id).text();
   $("#session").removeAttr("style");
   $("#session-id").val(id);
-  $("#session-title").text("与 "+name+" 聊天中");
+  if (name.length > 10)
+    name = name.substring(0, 10) + "...";
+  checkConnection(id);
   $("#message-send").attr("onclick","sendMessage("+id+")");
+  $("#clearWindow").attr("onclick", "clearWindow(" + id + ")");
   var pic = $("#img"+id).attr("src");
   $("#friend-pic").val(pic);
   $("#message-plain").empty();

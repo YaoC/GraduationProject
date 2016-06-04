@@ -370,6 +370,7 @@ function clearUploadBar(id) {
 
 
 function showChatRecords(id, start) {
+  $("#clearWindow").removeClass("disabled");
   getChatRecords(ME, id, parseInt(start)).then(function (records) {
     var decrypt = new JSEncrypt();
     decrypt.setPrivateKey(privateKey);
@@ -456,4 +457,47 @@ function removeReturnBottom() {
   setTimeout(function () {
     $("#top-window").remove();
   }, 2000);
+}
+
+function clearWindow(id) {
+  $('#message-plain').empty();
+  iconForGetMore();
+  setNextRecords(id, 0);
+  $("#clearWindow").addClass("disabled");
+}
+
+function closeConnection(id) {
+  if (dataChannels[id] && dataChannels[id].readyState == "open") {
+    dataChannels[id].close();
+  }
+}
+
+function checkConnection(id) {
+  var name = $("#nickname" + id).text();
+  if (dataChannels[id] && dataChannels[id].readyState == "open") {
+    $("#session-title").text("与 " + name + " 聊天中");
+    $("#connection-state").text("断开p2p连接");
+    $("#closeConnection").attr("onclick", "closeConnection(" + id + ")");
+    $("#closeConnection").removeClass("disabled");
+  } else {
+    var isOnline = ($("#onlineTag-" + id).text() == "[在线]");
+    if (isOnline) {
+      $("#session-title").text("未与 " + name + " 建立连接");
+      $("#connection-state").text("请求连接");
+      $("#closeConnection").attr("onclick", "talkWith(" + id + ")");
+      $("#closeConnection").removeClass("disabled");
+    } else {
+      $("#session-title").text(" " + name + " 不在线");
+      $("#connection-state").text("对方不在线");
+      $("#closeConnection").addClass("disabled");
+    }
+  }
+}
+
+function deleteMessages() {
+  var id = $("#session-id").val();
+  var name = $("#nickname" + id).text();
+  $("#confirmMessage").text("是否删除与用户 " + name + "(id:" + id + ") 的聊天记录？");
+  $("#deleteConfirm").attr("onclick", "deleteMessageByUser(" + ME + "," + id + ")");
+  $('#confirm').modal('show')
 }

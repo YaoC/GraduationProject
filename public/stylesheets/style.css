@@ -497,3 +497,12 @@ a:active{
   -moz-filter: grayscale(0.8);
   -o-filter: grayscale(0.8);
 }
+
+.glyphicon {
+  cursor: pointer;
+}
+
+.dropdown {
+  background-color: transparent;
+  border: none;
+}

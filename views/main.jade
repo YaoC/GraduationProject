@@ -235,6 +235,15 @@ block content
           button(type="button" class="btn btn-default" data-dismiss="modal") 返回
           button(type="button" class="btn btn-primary" id="btn-search" onclick="searchFriend()") 查找
 
+  div(class="modal fade bs-example-modal-sm" id="confirm" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel")
+    div(class="modal-dialog modal-sm")
+      div(class="modal-content")
+        div(class="modal-header")
+          h4 操作确认
+        div(class="modal-body" id="confirmMessage")
+        div(class="modal-footer")
+          button(type="button" class="btn btn-default" data-dismiss="modal") 取消
+          button(type="button" class="btn btn-danger" id="deleteConfirm") 删除
 
   div(class="container")
     div(class="row myInfo")
@@ -333,8 +342,18 @@ block content
           input(id="myPublicKey" value="#{userInfo.public_key}" hidden)
           div(class="window-title" )
             span(id="session-title")
-            button(onclick="removeSession(1)" class="left-icon")
-              span(class="glyphicon glyphicon-triangle-bottom " aria-hidden="true")
+            div(class="btn-group left-icon")
+              button(type="button" class="dropdown dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false")
+                span(class="glyphicon glyphicon-option-horizontal " aria-hidden="true")
+              ul(class="dropdown-menu")
+                li(id="clearWindow")
+                  a 清空聊天窗口
+                li(id="closeConnection")
+                  a(id="connection-state") 未建立连接
+                li(role="separator" class="divider")
+                li(id="delete-message" onclick="deleteMessages()")
+                  a 删除所有聊天记录
+
             button(onclick="removeSession()" class="right-icon")
               span(class="glyphicon glyphicon-remove" aria-hidden="true" )
           div(class="window-main" id="message-plain")
