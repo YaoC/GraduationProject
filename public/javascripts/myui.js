@@ -6,6 +6,7 @@ $(document).ready(function () {
   privateKey = $("#myPrivateKey").val();
   publicKey = $("#myPublicKey").val();
 
+  $('[data-toggle="popover"]').popover();
 
   $("#ipt-pic").fileinput({
     language: 'zh',
@@ -19,6 +20,20 @@ $(document).ready(function () {
     language: 'zh',
     showPreview: false
   });
+
+
+  var html = "<table class='emotion'>";
+  var now = 0;
+  for (var i = 0; i < 10; i++) {
+    html += "<tr>";
+    for (var j = 0; j < 13; j++) {
+      now = i * 13 + j + 1;
+      html += "<td><img src='face/" + now + ".gif' onclick='emotionToStr(" + now + ")'></td>";
+    }
+    html += "</tr>";
+  }
+  html += "</table>";
+  $("#emotion-panel").attr("data-content", html);
 });
 
 function selectMenu(btn) {
@@ -386,17 +401,16 @@ function showChatRecords(id, start) {
       }
       if (record['owner'] == 1) {
         html = "<div class=\"row\"><div class=\"my-photo\"><img src=\"" + myPic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"my-tag\">" +
-          content + "</div></div>";
+          strToEmotion(content) + "</div></div>";
       } else {
-        html = "<div class=\"row\"><div class=\"friends-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">" + content + "</div></div>";
+        html = "<div class=\"row\"><div class=\"friends-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">" + strToEmotion(content) + "</div></div>";
       }
       $("#message-plain").prepend(html);
     }
     if (start == 0) {
       jumpToBottom();
-    } else {
-      $("#getMore").remove();
     }
+    $("#getMore").remove();
     if (size < 10) {
       noMoreRecord();
     } else {
@@ -487,7 +501,7 @@ function checkConnection(id) {
       $("#closeConnection").attr("onclick", "talkWith(" + id + ")");
       $("#closeConnection").removeClass("disabled");
     } else {
-      $("#session-title").text(" " + name + " 不在线");
+      $("#session-title").text(" " + name + " （离线）");
       $("#connection-state").text("对方不在线");
       $("#closeConnection").addClass("disabled");
     }
@@ -500,4 +514,32 @@ function deleteMessages() {
   $("#confirmMessage").text("是否删除与用户 " + name + "(id:" + id + ") 的聊天记录？");
   $("#deleteConfirm").attr("onclick", "deleteMessageByUser(" + ME + "," + id + ")");
   $('#confirm').modal('show')
+}
+
+function showEmotion() {
+  $('#emotion-panel').popover('toggle');
+}
+
+
+function emotionToStr(id) {
+  var str = $("#message-content").val();
+  str += "[e:" + id + "]";
+  $("#message-content").val(str);
+}
+
+function strToEmotion(str) {
+  //防止注入
+  str = str.replace(/\</g, '&lt;');
+  str = str.replace(/\>/g, '&gt;');
+  str = str.replace(/\n/g, '<br/>');
+  //表情代码转换为表情
+  str = str.replace(/\[e:([0-9]*)\]/g, '<img src="face/$1.gif" />');
+  return str;
+}
+
+function keyEvent() {
+  if (event.keyCode == 13) {
+    var id = parseInt($("#session-id").val());
+    sendMessage(id);
+  }
 }

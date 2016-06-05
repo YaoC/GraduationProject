@@ -245,7 +245,7 @@ block content
           button(type="button" class="btn btn-default" data-dismiss="modal") 取消
           button(type="button" class="btn btn-danger" id="deleteConfirm") 删除
 
-  div(class="container")
+  div(class="container" onkeydown="keyEvent();")
     div(class="row myInfo")
       div(class="col-lg-1 hidden-sm")
         a(data-toggle="modal" data-target="#my-pic")
@@ -340,10 +340,10 @@ block content
           input(id="friend-pic" hidden)
           input(id="myPrivateKey" value="#{userInfo.private_key}" hidden)
           input(id="myPublicKey" value="#{userInfo.public_key}" hidden)
-          div(class="window-title" )
+          div(class="window-title")
             span(id="session-title")
             div(class="btn-group left-icon")
-              button(type="button" class="dropdown dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false")
+              button(type="button" class="dropdown dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" )
                 span(class="glyphicon glyphicon-option-horizontal " aria-hidden="true")
               ul(class="dropdown-menu")
                 li(id="clearWindow")
@@ -368,13 +368,12 @@ block content
             //  div(class="my-photo")
             //    img(class="img-rounded freinds-display" src="#{userInfo.display}")
             //  div(class="my-tag")
-          div(class="window-bottom")
+          div(class="window-bottom" id="chatBottom")
             div(class="form-horizontal")
               div(class="form-group" style="margin-bottom:5px;")
-                div(class="col-lg-10" style="padding-right:0px;")
-                  input(type="text" class="form-control" id="message-content" onfocus="jumpToBottom()")
-                div(class="col-lg-2" style="padding-left:25px;padding-right:5px;")
-                  button(type="button" class="btn btn-primary" id="message-send") 发送
+                img(src="/images/smile.svg" id="emotion-panel" data-html="true" tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-placement="top")
+                input(type="text" id="message-content" onfocus="jumpToBottom()")
+                button(type="button" class="btn btn-primary" id="message-send" ) 发 送
         //聊天窗口结束
 
         //好友请求窗口

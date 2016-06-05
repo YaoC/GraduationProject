@@ -1016,7 +1016,7 @@ function sendMessage(id){
     var pic = $("#myPortrait").attr("src");
     var htmlId = 'myMessage-' + Date.parse(new Date());
     var html = "<div id='" + htmlId + "' class=\"row\" style=\"opacity: 0;\"><div class=\"my-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"my-tag\">" +
-      content+"</div></div>";
+      strToEmotion(content) + "</div></div>";
     var encrypt = new JSEncrypt();
     var myEncrypt = new JSEncrypt();
     encrypt.setPublicKey(friendsKeys[id]);
@@ -1074,7 +1074,7 @@ function handleChat(id, content_encrypt) {
   if($("#session").css("display")=="block"&&$("#session-id").val()==id){
     var pic = $("#friend-pic").val();
     var htmlId = "friendsMsg-" + Date.parse(new Date());
-    var html = "<div id='" + htmlId + "' class=\"row\" style=\"opacity: 0;\"><div class=\"friends-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">" + content + "</div></div>";
+    var html = "<div id='" + htmlId + "' class=\"row\" style=\"opacity: 0;\"><div class=\"friends-photo\"><img src=\"" + pic + "\" class=\"img-rounded freinds-display\"/></div><div class=\"friends-tag\">" + strToEmotion(content) + "</div></div>";
     $("#message-plain").append(html);
     showReturnBottom();
     $("#" + htmlId).animate({opacity: 1}, 3000);
