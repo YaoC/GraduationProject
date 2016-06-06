@@ -152,9 +152,10 @@ socket.on("deleteFriendSuccess", function (msg) {
     alertInfoSuccess("成功解除与好友" + name + " (id:" + id + ") 的好友关系");
   else {
     var html = "<button id='delFriend-" + id + "' class=\"content-btn btn btn-block\" onclick=\"showDelFriendNotification(" + "'好友通知'" + "," +
-      id + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">很遗憾！" +
+      id + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 <span id='delIcon" + id + "' class='sessionBadge badge'>1</span></div><div class=\"content-message\">很遗憾！" +
       name + "（ID：" + id + "）解除了与你的好友关系</div></button>";
     $("#notification-content").append(html);
+    setNotificationIcon();
   }
   if ($("#session").css("display") == "block" && $("#session-id").val() == id) {
     removeSession();
@@ -179,9 +180,10 @@ socket.on("newFriends", function (data) {
       temp.getMinutes() + ":" + temp.getSeconds();
     //将加好友的消息加入到通知队列中
     var html = "<button id=\"newFriend-" + data[i] + "\" class=\"content-btn btn btn-block\" onclick=\"showFriendNotification(" + "'好友通知'" + "," +
-      data[i] + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">恭喜！你与用户" +
+      data[i] + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 <span id='notiIcon" + data[i] + "' class='sessionBadge badge'>1</span></div><div class=\"content-message\">恭喜！你与用户" +
       name + "（ID：" + data[i] + "）成为了好友</div></button>";
     $("#notification-content").append(html);
+    setNotificationIcon();
   }
 });
 
@@ -192,15 +194,17 @@ socket.on("friendDeleted", function (data) {
   var time = temp.getFullYear() + "-" + (temp.getMonth() + 1) + "-" + temp.getDate() + " " + temp.getHours() + ":" +
     temp.getMinutes() + ":" + temp.getSeconds();
   var html = "<button id='delFriend-" + id + "' class=\"content-btn btn btn-block\" onclick=\"showDelFriendNotification(" + "'好友通知'" + "," +
-    id + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">很遗憾！" +
+    id + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 <span id='delIcon" + id + "' class='sessionBadge badge'>1</span></div><div class=\"content-message\">很遗憾！" +
     name + "（ID：" + id + "）解除了与你的好友关系</div></button>";
   $("#notification-content").append(html);
+  setNotificationIcon();
 });
 
 
 $(document).ready(function () {
   socket.emit("getNotifications");
   socket.emit("getFriendsDeleted");
+  socket.emit("getFriendsReject");
 });
 
 /**************************RTCPeerConnection********************************/
@@ -1004,9 +1008,10 @@ socket.on('friendsAsk',function (data) {
     temp.getMinutes()+":"+temp.getSeconds();
   //将加好友的消息加入到通知队列中
   var html = "<button id='friendAsk-" + data['id'] + "' class=\"content-btn btn btn-block\" onclick=\"showFriendAsk(" +
-    data['id']+",\'"+data['name']+"\',\'"+time+"\')\"><div class=\"content-header\">好友请求 </div><div class=\"content-message\">用户"+
+    data['id'] + ",\'" + data['name'] + "\',\'" + time + "\')\"><div class=\"content-header\">好友请求 <span id='askIcon" + data['id'] + "' class='sessionBadge badge'>1</span></div><div class=\"content-message\">用户" +
     data['name']+"（ID："+data['id']+"）希望添加你为好友</div></button>";
   $("#notification-content").append(html);
+  setNotificationIcon();
 
 });
 
@@ -1016,10 +1021,23 @@ socket.on("newFriendNotification", function (data) {
     temp.getMinutes() + ":" + temp.getSeconds();
   //将加好友的消息加入到通知队列中
   var html = "<button id='newFriend-" + data['id'] + "' class=\"content-btn btn btn-block\" onclick=\"showFriendNotification(" + "'好友通知'" + "," +
-    data['id'] + ",\'" + data['nickname'] + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">恭喜！你与用户" +
+    data['id'] + ",\'" + data['nickname'] + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 <span id='notiIcon" + data['id'] + "' class='sessionBadge badge'>1</span></div><div class=\"content-message\">恭喜！你与用户" +
     data['nickname'] + "（ID：" + data['id'] + "）成为了好友</div></button>";
   $("#notification-content").append(html);
+  setNotificationIcon();
 
+});
+
+socket.on("friendReject", function (data) {
+  var temp = new Date();
+  var time = temp.getFullYear() + "-" + (temp.getMonth() + 1) + "-" + temp.getDate() + " " + temp.getHours() + ":" +
+    temp.getMinutes() + ":" + temp.getSeconds();
+  //将加好友的消息加入到通知队列中
+  var html = "<button id='friendReject-" + data['id'] + "' class=\"content-btn btn btn-block\" onclick=\"showFriendReject(" + "'好友通知'" + "," +
+    data['id'] + ",\'" + data['name'] + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 <span id='rejectIcon" + data['id'] + "' class='sessionBadge badge'>1</span></div><div class=\"content-message\">很遗憾！用户" +
+    data['name'] + "（ID：" + data['id'] + "）拒绝了你的好友请求。</div></button>";
+  $("#notification-content").append(html);
+  setNotificationIcon();
 });
 
 function acceptFriendsAsk(friendId) {
@@ -1038,6 +1056,12 @@ function delNewFriend(id) {
   socket.emit("delNewFriend", id);
   removeWindow("notification");
   $("#newFriend-" + id).remove();
+}
+
+function delFriendReject(id) {
+  socket.emit("delFriendReject", id);
+  removeWindow("notification");
+  $("#friendReject-" + id).remove();
 }
 
 function delFriendDeleted(id) {
@@ -1212,14 +1236,13 @@ function handleChat(id, content_encrypt) {
     showReturnBottom();
     $("#" + htmlId).animate({opacity: 1}, 3000);
   } else {
-    if (unreads[id] < 99) {
+    if (unreads[id] < 99)
       unreads[id]++;
-      if (unreads[id]) {
-        var htmlId = "unreadsOf" + id;
-        var html = "<span id='" + htmlId + "' class='sessionBadge badge'>" + unreads[id] + "</span>";
-        $("#" + htmlId).remove();
-        $("#conNameOf" + id).append(html);
-      }
+    if (unreads[id]) {
+      var htmlId = "unreadsOf" + id;
+      var html = "<span id='" + htmlId + "' class='sessionBadge badge'>" + unreads[id] + "</span>";
+      $("#" + htmlId).remove();
+      $("#conNameOf" + id).append(html);
     }
   }
   setConnectionNotification();

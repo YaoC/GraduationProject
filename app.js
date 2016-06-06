@@ -317,6 +317,10 @@ io.on('connection', function(socket) {
       redisDao.isFriendsAskExists(userId, friendId).then(function (exists) {
         if (exists) {
           redisDao.deleteFriendsAsk(userId, friendId);
+          if (sockets[friendId]) {
+            sockets[friendId].emit("friendReject", {"id": userId, "name": socket.request.session.userName});
+          }
+          redisDao.friendReject(friendId, userId);
         }
       });
     }
@@ -331,13 +335,11 @@ io.on('connection', function(socket) {
 
   socket.on("getFriendsDeleted", function () {
     redisDao.getFriendsDeleted(userId).then(function (data) {
-      for (var i = 0; i < data.length; i++) {
-        var msg = {"id": data[i]};
-        redisDao.getNickName(data[i]).then(function (nickname) {
-          msg["name"] = nickname;
-          socket.emit("friendDeleted", msg);
+      data.forEach(function (user) {
+        redisDao.getNickName(user).then(function (name) {
+          socket.emit("friendDeleted", {"id": user, "name": name});
         });
-      }
+      });
     });
   });
 
@@ -347,6 +349,20 @@ io.on('connection', function(socket) {
 
   socket.on("delFriendDeleted", function (id) {
     redisDao.deleteFriendDeleted(userId, id);
+  });
+
+  socket.on("getFriendsReject", function () {
+    redisDao.getFriendsReject(userId).then(function (users) {
+      users.forEach(function (user) {
+        redisDao.getNickName(user).then(function (name) {
+          socket.emit("friendReject", {"id": user, "name": name});
+        });
+      });
+    });
+  });
+
+  socket.on("delFriendReject", function (id) {
+    redisDao.deleteFriendReject(userId, id);
   });
   
 });

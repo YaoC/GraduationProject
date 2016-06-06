@@ -3,6 +3,7 @@ var publicKey = null;
 var friendsKeys = {};
 
 var unreads = {};
+var notificationNum = 0;
 
 $(document).ready(function () {
   privateKey = $("#myPrivateKey").val();
@@ -282,7 +283,10 @@ function showSuccess(id) {
 }
 
 function  showFriendAsk(id,name,time) {
+  descNotificationIcon();
+  $("#askIcon" + id).remove();
   $("#session").attr("style", "display:none;");
+  $("#notification").attr("style", "display:none;");
   $("#p-content").text(name+"(ID："+id+")希望添加你为好友!");
   $("#p-from").text("来自："+name);
   $("#p-time").text(time);
@@ -292,6 +296,8 @@ function  showFriendAsk(id,name,time) {
 }
 
 function showFriendNotification(title, id, name, time) {
+  descNotificationIcon();
+  $("#notiIcon" + id).remove();
   $("#session").attr("style", "display:none;");
   $("#friendAsk").attr("style", "display:none;");
   $("#notiTitle").text(title);
@@ -303,6 +309,8 @@ function showFriendNotification(title, id, name, time) {
 }
 
 function showDelFriendNotification(title, id, name, time) {
+  descNotificationIcon();
+  $("#delIcon" + id).remove();
   $("#session").attr("style", "display:none;");
   $("#friendAsk").attr("style", "display:none;");
   $("#notiTitle").text(title);
@@ -310,6 +318,19 @@ function showDelFriendNotification(title, id, name, time) {
   $("#notiFrom").text("来自：" + name);
   $("#notiTime").text(time);
   $("#notiDelete").attr("onclick", "delFriendDeleted(" + id + ")");
+  $("#notification").removeAttr("style");
+}
+
+function showFriendReject(title, id, name, time) {
+  descNotificationIcon();
+  $("#rejectIcon" + id).remove();
+  $("#session").attr("style", "display:none;");
+  $("#friendAsk").attr("style", "display:none;");
+  $("#notiTitle").text(title);
+  $("#notiContent").text("很遗憾！" + name + "(ID：" + id + ") 拒绝了你的好友请求。");
+  $("#notiFrom").text("来自：" + name);
+  $("#notiTime").text(time);
+  $("#notiDelete").attr("onclick", "delFriendReject(" + id + ")");
   $("#notification").removeAttr("style");
 }
 
@@ -603,5 +624,24 @@ function setConnectionNotification() {
   if (notification) {
     var html = "<span id='connectionNum' class='badge'>" + notification + "</span>";
     $("#connectionIcon").after(html);
+  }
+}
+
+function setNotificationIcon() {
+  notificationNum++;
+  notificationNum = notificationNum > 99 ? 99 : notificationNum;
+  $("#notificationNum").remove();
+  if (notificationNum) {
+    var html = "<span id='notificationNum' class='badge'>" + notificationNum + "</span>";
+    $("#notificationIcon").after(html);
+  }
+}
+
+function descNotificationIcon() {
+  notificationNum--;
+  $("#notificationNum").remove();
+  if (notificationNum > 0) {
+    var html = "<span id='notificationNum' class='badge'>" + notificationNum + "</span>";
+    $("#notificationIcon").after(html);
   }
 }

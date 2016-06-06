@@ -538,7 +538,7 @@ a:active{
 .sessionBadge {
   float: right;
   top: 0px !important;
-  background-color: lightcoral;
+  background-color: rgba(34, 170, 179, 0.59);
   cursor: pointer;
   padding: 3px 5px;
   min-width: 8px;

@@ -100,6 +100,19 @@ module.exports = {
       });
     });
   },
+  friendReject: function (uid, fid) {
+    client.sadd("friendReject-" + uid, fid);
+  },
+  deleteFriendReject: function (uid, fid) {
+    client.srem("friendReject-" + uid, fid);
+  },
+  getFriendsReject: function (uid) {
+    return new Promise(function (resolve, reject) {
+      client.smembers("friendReject-" + uid, function (err, data) {
+        resolve(data);
+      });
+    });
+  },
 	addFriendsRelationship:function (uid1,uid2) {
     client.sadd('friendsof:' + uid1, uid2);
     client.sadd('friendsof:' + uid2, uid1);
