@@ -6,7 +6,7 @@
     <bookmark url="file://$PROJECT_DIR$/public/javascripts/connect.js" line="682" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e3312baf-396c-4559-9f37-241b76b603b5" name="Default" comment="修正myFriends数组的bug（String=&gt;Integer）">
+    <list default="true" id="e3312baf-396c-4559-9f37-241b76b603b5" name="Default" comment="修正img大小">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/stylesheets/style.css" afterPath="$PROJECT_DIR$/public/stylesheets/style.css" />
     </list>
@@ -156,8 +156,8 @@
       <file leaf-file-name="style.css" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/public/stylesheets/style.css">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="264">
-              <caret line="8" column="17" selection-start-line="8" selection-start-column="17" selection-end-line="8" selection-end-column="17" />
+            <state relative-caret-position="261">
+              <caret line="216" column="13" selection-start-line="216" selection-start-column="13" selection-end-line="216" selection-end-column="13" />
               <folding />
             </state>
           </provider>
@@ -442,7 +442,7 @@
       <workItem from="1464847205110" duration="907000" />
       <workItem from="1464848125195" duration="4483000" />
       <workItem from="1464852618432" duration="14899000" />
-      <workItem from="1464867747356" duration="101170000" />
+      <workItem from="1464867747356" duration="101432000" />
     </task>
     <task id="LOCAL-00001" summary="完善上传和查询功能，优化界面">
       <created>1464420951588</created>
@@ -535,11 +535,18 @@
       <option name="project" value="LOCAL" />
       <updated>1465233596824</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="修正img大小">
+      <created>1465233846295</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1465233846295</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="446372000" />
+    <option name="totallyTimeSpent" value="446634000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -600,7 +607,8 @@
     <MESSAGE value="完成离线时的各种通知" />
     <MESSAGE value="完善离线时的各种通知，改进界面" />
     <MESSAGE value="修正myFriends数组的bug（String=&gt;Integer）" />
-    <option name="LAST_COMMIT_MESSAGE" value="修正myFriends数组的bug（String=&gt;Integer）" />
+    <MESSAGE value="修正img大小" />
+    <option name="LAST_COMMIT_MESSAGE" value="修正img大小" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
@@ -1195,8 +1203,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/public/stylesheets/style.css">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="264">
-          <caret line="8" column="17" selection-start-line="8" selection-start-column="17" selection-end-line="8" selection-end-column="17" />
+        <state relative-caret-position="261">
+          <caret line="216" column="13" selection-start-line="216" selection-start-column="13" selection-end-line="216" selection-end-column="13" />
           <folding />
         </state>
       </provider>
