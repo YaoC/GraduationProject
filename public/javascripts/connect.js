@@ -1,6 +1,6 @@
 var ME = 0;
 // 我的好友id
-var myFrineds = [];
+var myFriends = [];
 //保存所有与本地相连的peer connection， 键为对方id，值为RTCPeerConnection类型
 var peerConnections = {};
 //保存所有与本地连接的dataChannel,键为对方id,值为dataChannel类型
@@ -162,9 +162,9 @@ socket.on("deleteFriendSuccess", function (msg) {
   }
   $("#friendsSession-" + id).remove();
   $("#myFriend-" + id).remove();
-  var index = myFrineds.indexOf(id);
+  var index = myFriends.indexOf(id);
   if (index >= 0)
-    myFrineds.splice(index, 1);
+    myFriends.splice(index, 1);
 
 });
 
@@ -348,9 +348,9 @@ function setupChat(id, ischatChannel, fileId, blockId) {
       {
         alertInfoWarning("你与对方不是好友关系");
         dataChannels[id].close();
-        var index = myFrineds.indexOf(id);
+        var index = myFriends.indexOf(id);
         if (index >= 0) {
-          myFrineds.splice(index, 1);
+          myFriends.splice(index, 1);
           $("#myFriend-" + id).remove();
         }
         break;
@@ -1072,8 +1072,8 @@ function delFriendDeleted(id) {
 
 socket.on('newFriend',function (info) {
   if(info){
-    if (!myFrineds.includes(info['id'])) {
-      myFrineds.push(info['id']);
+    if (!myFriends.includes(info['id'])) {
+      myFriends.push(parseInt(info['id']));
     }
     var html;
     if (info['isOnline']) {
@@ -1210,7 +1210,9 @@ function sendMessage(id){
 
 function handleChat(id, content_encrypt) {
   // console.log(content_encrypt);
-  if (!myFrineds.includes(id)) {
+  console.log(myFriends);
+  console.log(id);
+  if (!myFriends.includes(id)) {
     dataChannels[id].send(JSON.stringify({"tag": "notFriend"}));
     return false;
   }
