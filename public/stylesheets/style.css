@@ -19,6 +19,13 @@ img, label, span {
   cursor: default;
 }
 
+.modal-body span {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 button, input, div, img {
   outline: none !important;
 }
@@ -98,14 +105,7 @@ a:active{
 }
 
 
-.btn-select{
-  min-height: 60px;
-  background-color: #3c3c3c;
-  color: #ffffff;
-}
-.btn-select:hover{
-  background-color: #8c8c8c;
-}
+
 
 #myPortrait {
   cursor: pointer;
@@ -230,6 +230,7 @@ a:active{
   background-color: #3c3c3c;
   padding-top: 5px;
   padding-left: 5px;
+  max-height: 45px;
 }
 
 .right-icon{
@@ -335,13 +336,13 @@ a:active{
 .btn-left{
   float:right;
   display: inline;
-  padding: 5px 15px 10px 0;
+  padding: 0 15px 5px 0;
 }
 
 .btn-right{
   display: inline;
   float:right;
-  padding: 5px 30px 10px 0;
+  padding: 0 30px 5px 0;
 }
 
 .text-title{
@@ -531,5 +532,32 @@ a:active{
 }
 
 .emotion img {
+  cursor: pointer;
+}
+
+.sessionBadge {
+  float: right;
+  top: 0px !important;
+  background-color: lightcoral;
+  cursor: pointer;
+  padding: 3px 5px;
+  min-width: 8px;
+  font-size: 12px;
+}
+
+.select-btn {
+  min-height: 60px;
+  background-color: #3c3c3c;
+  color: white;
+  min-width: 100%;
+  border: none;
+}
+
+.select-btn:hover {
+  background-color: #3f3f3f;
+  color: grey;
+}
+
+.select-btn span {
   cursor: pointer;
 }

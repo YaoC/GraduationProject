@@ -216,6 +216,10 @@ block content
               div(class="col-sm-9" )
                 input(class="form-control input-sm friends" type="text" id="friends-birthday" disabled)
             div(class="form-group")
+              label(class="control-label col-sm-3") 电话
+              div(class="col-sm-9" )
+                input(class="form-control input-sm friends" value="成为好友后才可查看" type="text" id="friends-phone" disabled)
+            div(class="form-group")
               p(class="motto" id="friends-motto")
         div(class="modal-footer")
           button(type="button" class="btn btn-default" data-dismiss="modal") 返回
@@ -313,21 +317,20 @@ block content
         div(class="menu-bottom")
           div(class="btn-group btn-group-justified" role="group" aria-label="...")
             div(class="btn-group" role="group")
-              button(type="button" class="btn btn-select" id="btn-session" onclick="selectMenu(1)")
-                span(class="glyphicon glyphicon-pencil" aria-hidden="true")
-                span(class="badge") 10
+              button(type="button" class="select-btn" id="btn-session" onclick="selectMenu(1)")
+                span(id="connectionIcon" class="glyphicon glyphicon-pencil" aria-hidden="true")
                 span(class="glyphicon-class icon-size")  </br>会话
             div(class="btn-group" role="group")
-              button(type="button" class="btn btn-select" id="btn-friends" onclick="selectMenu(2)")
+              button(type="button" class="select-btn" id="btn-friends" onclick="selectMenu(2)")
                 span(class="glyphicon glyphicon-user" aria-hidden="true")
                 span(class="glyphicon-class icon-size")  </br>好友
             div(class="btn-group" role="group")
-              button(type="button" class="btn btn-select" id="btn-notification" onclick="selectMenu(3)")
+              button(type="button" class="select-btn" id="btn-notification" onclick="selectMenu(3)")
                 span(class="glyphicon glyphicon-tag" aria-hidden="true")
                 span(class="badge") 99
                 span(class="glyphicon-class icon-size")  </br>通知
             div(class="btn-group" role="group")
-              button(type="button" class="btn btn-select" id="btn-file" onclick="selectMenu(4)")
+              button(type="button" class="select-btn" id="btn-file" onclick="selectMenu(4)")
                 span(class="glyphicon glyphicon-folder-open" aria-hidden="true")
                 span(class="glyphicon-class icon-size")  </br>文件
 
@@ -350,6 +353,8 @@ block content
                   a 清空聊天窗口
                 li(id="closeConnection")
                   a(id="connection-state") 未建立连接
+                li(id="userInfo")
+                  a 用户信息
                 li(role="separator" class="divider")
                 li(id="delete-message" onclick="deleteMessages()")
                   a 删除所有聊天记录
@@ -394,65 +399,22 @@ block content
               div(class="btn-left")
                 button(id="reject-friend-ask" type="button" class="btn btn-danger") 拒绝并删除好友请求
         //系统通知窗口
-        div(id="notification-1" style="display:none;")
-          div(class="window-title") 系 统 通 知
-            button(onclick="removeNotification(1)" class="right-icon")
+        div(id="notification" style="display:none;")
+          div(class="window-title" id="notiTitle") 系 统 通 知
+            button(onclick="removeNotification()" class="right-icon")
               span(class="glyphicon glyphicon-remove" aria-hidden="true" )
           div(class="window-main")
-            h4(class="text-title") 亲爱的 Drinkwater:
-            p(class="text-content") 恭喜您！您的帐号已被我公司后台系统抽选为今日 “幸运用户”，您将获得由我公司送出的丰厚奖金：68000元（RMB）以及三星公司提供的Q30 笔记本电脑一台，为了确保用户能够安全领取奖项，请收到系统提示的用户即刻登录活动网站验证查询。
-            p(class="text-bottom") 来在：系统管理员
-            p(class="text-bottom") 2016-05-08 01:58
+            h4(class="text-title") 亲爱的 #{userName}:
+            p(class="text-content" id="notiContent")
+            p(class="text-bottom" id="notiFrom")
+            p(class="text-bottom" id="notiTime")
 
           div(class="window-bottom")
             div(class="row")
               div(class="btn-right")
-                button(type="button" class="btn btn-danger") 删除通知
+                button(id="notiDelete" type="button" class="btn btn-danger") 删除通知
               div(class="btn-left")
-                button(type="button" class="btn btn-primary") 标为已读
-        //
-        //div(id="file-info" style="display:none;")
-        //  div(class="window-title") 文 件 信 息
-        //    button(onclick="removeFileInfo()" class="right-icon")
-        //      span(class="glyphicon glyphicon-remove" aria-hidden="true" )
-        //  div(class="window-main")
-
-        //
-        //  div(class="window-bottom")
-        //    div(class="row")
-        //      div(class="btn-right")
-        //        button(type="button" class="btn btn-danger") 删除通知
-        //      div(class="btn-left")
-        //        button(type="button" class="btn btn-primary") 标为已读
-
-
+                button(type="button" class="btn btn-primary" onclick="removeWindow('notification')") 我知道了
       div(class="col-lg-1")
-
-
-
-
-
-  //h2 #{userName}
-  //
-  //h2 建立连接
-  //p 输入朋友id
-  //input(id="friendsID")
-  //button(onclick="join($('#friendsID').val())") 发起会话
-  //
-  //h2 聊天
-  //p 输入朋友id
-  //input(id="toFriendsID")
-  //p
-  //textarea(id="display")
-  //p
-  //input(id="content")
-  //button(onclick="send($('#toFriendsID').val(),$('#content').val())") 发送
-  //
-  //h2 文件相关
-  //p input a file
-  //input(type="file" id="file")
-  //button(onclick="addFile()") 做种
-  //
-  //
 
 

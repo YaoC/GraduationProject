@@ -49,6 +49,20 @@ module.exports = {
 	addFriendsAsk: function (uid,fid) {
     client.sadd("askof:" + uid, fid);
 	},
+  addNewFriend: function (uid, fid) {
+    client.sadd("newFriends-" + uid, fid);
+    client.sadd("newFriends-" + fid, uid);
+  },
+  getNewFriends: function (uid) {
+    return new Promise(function (resolve, reject) {
+      client.smembers("newFriends-" + uid, function (err, replies) {
+        resolve(replies);
+      })
+    });
+  },
+  delNewFriend: function (uid, fid) {
+    client.srem("newFriends-" + uid, fid);
+  },
   getFriendsAsk:function (uid) {
     return new Promise(function (resolve, reject) {
       client.smembers("askof:"+uid,function (err,replies) {
@@ -64,15 +78,43 @@ module.exports = {
     });
   },
 	isFriendsAskExists:function (uid,fid) {
-		return client.sismember("askof:"+uid, fid);
+    return new Promise(function (resolve, reject) {
+      client.sismember("askof:" + uid, fid, function (err, isExist) {
+        resolve(isExist);
+      });
+    });
 	},
 	deleteFriendsAsk:function (uid,fid) {
     client.srem("askof:" + uid, fid);
 	},
+  friendDeleted: function (uid, fid) {
+    client.sadd("friendDeleted-" + uid, fid);
+  },
+  deleteFriendDeleted: function (uid, fid) {
+    client.srem("friendDeleted-" + uid, fid);
+  },
+  getFriendsDeleted: function (uid) {
+    return new Promise(function (resolve, reject) {
+      client.smembers("friendDeleted-" + uid, function (err, data) {
+        resolve(data);
+      });
+    });
+  },
 	addFriendsRelationship:function (uid1,uid2) {
     client.sadd('friendsof:' + uid1, uid2);
     client.sadd('friendsof:' + uid2, uid1);
 	},
+  deleteFriendsRelationship: function (uid1, uid2) {
+    client.srem('friendsof:' + uid1, uid2);
+    client.srem('friendsof:' + uid2, uid1);
+  },
+  isFriends: function (uid, fid) {
+    return new Promise(function (resolve, reject) {
+      client.sismember("friendsof:" + uid, fid, function (err, isExist) {
+        resolve(isExist);
+      });
+    });
+  },
   addNickName: function (uid,nickname) {
     client.hset("info:" + uid, 'nickname', nickname);
   },

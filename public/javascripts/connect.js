@@ -1,4 +1,6 @@
 var ME = 0;
+// 我的好友id
+var myFrineds = [];
 //保存所有与本地相连的peer connection， 键为对方id，值为RTCPeerConnection类型
 var peerConnections = {};
 //保存所有与本地连接的dataChannel,键为对方id,值为dataChannel类型
@@ -31,6 +33,12 @@ var socket = io.connect();
 function join(friendsId) {
   start(true, friendsId, 1);
 }
+
+socket.on("connect", function () {
+  $("#friends").empty();
+  $("#notification-content").empty();
+  $("#session-bar").empty();
+});
 
 socket.on('offer', function(data){
 	var friendsID = data['from'];
@@ -113,8 +121,9 @@ socket.on("imOnline", function (id) {
   // console.log(id+" is online");
   $("#myFriend-" + id).removeClass("offline");
   $("#onlineTag-" + id).text("[在线]");
-
-
+  if ($("#session").css("display") == "block" && $("#session-id").val() == id) {
+    talkWith(id);
+  }
 });
 
 socket.on('imOffline', function (id) {
@@ -125,6 +134,73 @@ socket.on('imOffline', function (id) {
   removeConnection(id);
   $("#myFriend-" + id).addClass("offline");
   $("#onlineTag-" + id).text("[离线]");
+  if ($("#session").css("display") == "block" && $("#session-id").val() == id) {
+    var name = $("#nickname" + id).text();
+    $("#session-title").text(" " + name + " （离线）");
+    $("#connection-state").text("对方不在线");
+    $("#closeConnection").addClass("disabled");
+  }
+});
+
+socket.on("deleteFriendSuccess", function (msg) {
+  var id = msg['id'];
+  var name = $("#nickname" + id).text();
+  var temp = new Date();
+  var time = temp.getFullYear() + "-" + (temp.getMonth() + 1) + "-" + temp.getDate() + " " + temp.getHours() + ":" +
+    temp.getMinutes() + ":" + temp.getSeconds();
+  if (msg['byMe'])
+    alertInfoSuccess("成功解除与好友" + name + " (id:" + id + ") 的好友关系");
+  else {
+    var html = "<button id='delFriend-" + id + "' class=\"content-btn btn btn-block\" onclick=\"showDelFriendNotification(" + "'好友通知'" + "," +
+      id + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">很遗憾！" +
+      name + "（ID：" + id + "）解除了与你的好友关系</div></button>";
+    $("#notification-content").append(html);
+  }
+  if ($("#session").css("display") == "block" && $("#session-id").val() == id) {
+    removeSession();
+  }
+  $("#friendsSession-" + id).remove();
+  $("#myFriend-" + id).remove();
+  var index = myFrineds.indexOf(id);
+  if (index >= 0)
+    myFrineds.splice(index, 1);
+
+});
+
+socket.on("duplicateFriAsk", function () {
+  alertInfoWarning("你已发出过好友请求，请等待对方回应");
+});
+
+socket.on("newFriends", function (data) {
+  for (var i = 0; i < data.length; i++) {
+    var name = $("#nickname" + data[i]).text();
+    var temp = new Date();
+    var time = temp.getFullYear() + "-" + (temp.getMonth() + 1) + "-" + temp.getDate() + " " + temp.getHours() + ":" +
+      temp.getMinutes() + ":" + temp.getSeconds();
+    //将加好友的消息加入到通知队列中
+    var html = "<button id=\"newFriend-" + data[i] + "\" class=\"content-btn btn btn-block\" onclick=\"showFriendNotification(" + "'好友通知'" + "," +
+      data[i] + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">恭喜！你与用户" +
+      name + "（ID：" + data[i] + "）成为了好友</div></button>";
+    $("#notification-content").append(html);
+  }
+});
+
+socket.on("friendDeleted", function (data) {
+  var id = data['id'],
+    name = data['name'];
+  var temp = new Date();
+  var time = temp.getFullYear() + "-" + (temp.getMonth() + 1) + "-" + temp.getDate() + " " + temp.getHours() + ":" +
+    temp.getMinutes() + ":" + temp.getSeconds();
+  var html = "<button id='delFriend-" + id + "' class=\"content-btn btn btn-block\" onclick=\"showDelFriendNotification(" + "'好友通知'" + "," +
+    id + ",\'" + name + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">很遗憾！" +
+    name + "（ID：" + id + "）解除了与你的好友关系</div></button>";
+  $("#notification-content").append(html);
+});
+
+
+$(document).ready(function () {
+  socket.emit("getNotifications");
+  socket.emit("getFriendsDeleted");
 });
 
 /**************************RTCPeerConnection********************************/
@@ -262,6 +338,18 @@ function setupChat(id, ischatChannel, fileId, blockId) {
       case 'rsaKey':
       {
         friendsKeys[id] = message['key'];
+        break;
+      }
+      case "notFriend":
+      {
+        alertInfoWarning("你与对方不是好友关系");
+        dataChannels[id].close();
+        var index = myFrineds.indexOf(id);
+        if (index >= 0) {
+          myFrineds.splice(index, 1);
+          $("#myFriend-" + id).remove();
+        }
+        break;
       }
       default:
         console.log("a message from " + id);
@@ -271,7 +359,7 @@ function setupChat(id, ischatChannel, fileId, blockId) {
   var closed = function () {
     delete(dataChannels[id]);
     delete(peerConnections[id]);
-    connections.splice(id, 1);
+    connections.splice(connections.indexOf(id), 1);
     console.log(id + ' disconnected !');
     if (id == $("#session-id").val()) {
       checkConnection(id);
@@ -906,16 +994,30 @@ function dataFormat(stamp) {
  */
 function addFriends(friendId) {
 	socket.emit('addFriends',friendId);
+  $("#friend-info").modal("hide");
 }
+
 
 socket.on('friendsAsk',function (data) {
   var temp = new Date();
   var time = temp.getFullYear()+"-"+(temp.getMonth()+1)+"-"+temp.getDate()+" "+temp.getHours()+":"+
     temp.getMinutes()+":"+temp.getSeconds();
   //将加好友的消息加入到通知队列中
-  var html = "<button class=\"content-btn btn btn-block\" onclick=\"showFriendAsk("+
+  var html = "<button id='friendAsk-" + data['id'] + "' class=\"content-btn btn btn-block\" onclick=\"showFriendAsk(" +
     data['id']+",\'"+data['name']+"\',\'"+time+"\')\"><div class=\"content-header\">好友请求 </div><div class=\"content-message\">用户"+
     data['name']+"（ID："+data['id']+"）希望添加你为好友</div></button>";
+  $("#notification-content").append(html);
+
+});
+
+socket.on("newFriendNotification", function (data) {
+  var temp = new Date();
+  var time = temp.getFullYear() + "-" + (temp.getMonth() + 1) + "-" + temp.getDate() + " " + temp.getHours() + ":" +
+    temp.getMinutes() + ":" + temp.getSeconds();
+  //将加好友的消息加入到通知队列中
+  var html = "<button id='newFriend-" + data['id'] + "' class=\"content-btn btn btn-block\" onclick=\"showFriendNotification(" + "'好友通知'" + "," +
+    data['id'] + ",\'" + data['nickname'] + "\',\'" + time + "\')\"><div class=\"content-header\">好友通知 </div><div class=\"content-message\">恭喜！你与用户" +
+    data['nickname'] + "（ID：" + data['id'] + "）成为了好友</div></button>";
   $("#notification-content").append(html);
 
 });
@@ -923,16 +1025,32 @@ socket.on('friendsAsk',function (data) {
 function acceptFriendsAsk(friendId) {
 	socket.emit('acceptFriendsAsk',friendId);
   removeWindow('friendAsk');
+  $("#friendAsk-" + friendId).remove();
 }
 
 function rejectFriendsAsk(friendId){
   socket.emit('rejectFriendsAsk',friendId);
   removeWindow('friendAsk');
+  $("#friendAsk-" + friendId).remove();
 }
 
+function delNewFriend(id) {
+  socket.emit("delNewFriend", id);
+  removeWindow("notification");
+  $("#newFriend-" + id).remove();
+}
+
+function delFriendDeleted(id) {
+  socket.emit("delFriendDeleted", id);
+  removeWindow("notification");
+  $("#delFriend-" + id).remove();
+}
 
 socket.on('newFriend',function (info) {
   if(info){
+    if (!myFrineds.includes(info['id'])) {
+      myFrineds.push(info['id']);
+    }
     var html;
     if (info['isOnline']) {
       html = "<button id=\"myFriend-" + info['id'] + "\" class=\"content-btn btn btn-block\" onclick=\"talkWith(" + info['id'] + ")\" ><div class=\"list-left\"><img id=\"img" + info['id'] + "\" src=" + (info["portrait"] || "http://i4.buimg.com/6b2fade4a2d1b576.jpg")
@@ -946,6 +1064,11 @@ socket.on('newFriend',function (info) {
     $("#friends").append(html);
   }
 });
+
+function deleteFriendConfirm(id) {
+  $("#confirm").modal("hide");
+  socket.emit("deleteFriend", id);
+}
 
 function talkWith(id) {
   var pic = $("#img" + id).attr('src');
@@ -983,6 +1106,7 @@ function talkWith(id) {
 
 
 function openSession(id) {
+  $("#friendAsk").attr("style", "display:none;");
   var name = $("#nickname"+id).text();
   $("#session").removeAttr("style");
   $("#session-id").val(id);
@@ -991,18 +1115,23 @@ function openSession(id) {
   checkConnection(id);
   $("#message-send").attr("onclick","sendMessage("+id+")");
   $("#clearWindow").attr("onclick", "clearWindow(" + id + ")");
+  $("#userInfo").attr("onclick", "showFriendInfo(" + id + ")");
   var pic = $("#img"+id).attr("src");
   $("#friend-pic").val(pic);
   $("#message-plain").empty();
   showChatRecords(id, 0);
+  unreads[id] = 0;
+  $("#unreadsOf" + id).remove();
+  setConnectionNotification();
 }
 
 function addConnection(id) {
   var name = $("#nickname"+id).text();
   var pic = $("#img"+id).attr("src");
   var html = "<button id=\"friendsSession-"+id+"\" class=\"content-btn btn btn-block\" onclick=\"openSession("+id+")\"><div class=\"list-left\"><img class=\"img-rounded freinds-display\" src=\""+pic+"\" /></div>"+
-    "<div class=\"list-right\"><div class=\"content-header\">"+name+"</div><div id=\"friendMessage"+id+"\" class=\"content-message\">已建立连接，可开始聊天！</div></div></button>";
+    "<div class=\"list-right\"><div id='conNameOf" + id + "' class=\"content-header\">" + name + "</div><div id=\"friendMessage" + id + "\" class=\"content-message\">已建立连接，可开始聊天！</div></div></button>";
   $("#session-bar").append(html);
+  unreads[id] = 0;
 }
 
 function removeConnection(id) {
@@ -1057,6 +1186,10 @@ function sendMessage(id){
 
 function handleChat(id, content_encrypt) {
   // console.log(content_encrypt);
+  if (!myFrineds.includes(id)) {
+    dataChannels[id].send(JSON.stringify({"tag": "notFriend"}));
+    return false;
+  }
   var decrypt = new JSEncrypt();
   decrypt.setPrivateKey(privateKey);
   var encrypt = new JSEncrypt();
@@ -1078,7 +1211,18 @@ function handleChat(id, content_encrypt) {
     $("#message-plain").append(html);
     showReturnBottom();
     $("#" + htmlId).animate({opacity: 1}, 3000);
+  } else {
+    if (unreads[id] < 99) {
+      unreads[id]++;
+      if (unreads[id]) {
+        var htmlId = "unreadsOf" + id;
+        var html = "<span id='" + htmlId + "' class='sessionBadge badge'>" + unreads[id] + "</span>";
+        $("#" + htmlId).remove();
+        $("#conNameOf" + id).append(html);
+      }
+    }
   }
+  setConnectionNotification();
   //储存聊天信息到Indexed DB
   record['owner'] = 0;
   record['slice'] = slice;

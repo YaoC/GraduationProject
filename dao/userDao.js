@@ -192,13 +192,19 @@ module.exports = {
         connection.query($userInfo.queryById,id, function(err,result){
           if(result.length){
             var data = result[0];
-            delete  data['phone'];
             delete data['private_key'];
             delete data['public_key'];
-            redisDao.getNickName(id).then(function (nickname) {
-              data['nickname'] = nickname||'该用户未设置昵称';
-              redisDao.getPortrait(id).then(function (portrait) {
-                data['portrait'] = portrait||'http://i4.buimg.com/6b2fade4a2d1b576.jpg';
+            var userId = req.session.userId;
+            redisDao.isFriends(userId, id).then(function (isFriend) {
+              //好友才能查看电话
+              if (!isFriend) {
+                delete  data['phone'];
+              }
+              data['isFriend'] = isFriend;
+              redisDao.getFriendInfo(id).then(function (info) {
+                data['nickname'] = info["nickname"] || '该用户未设置昵称';
+                data['portrait'] = info["portrait"] || 'http://i4.buimg.com/6b2fade4a2d1b576.jpg';
+                data['motto'] = info["motto"] || "该用户无签名";
                 data['code']  = 200;
                 jsonWrite(res, data);
               });

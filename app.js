@@ -129,7 +129,7 @@ io.on('connection', function(socket) {
     });
     redisDao.getFriendsAsk(userId).then(function (data) {
       if(data.length){
-        data.forEach(function (user,i) {
+        data.forEach(function (user) {
           redisDao.getNickName(user).then(function (nickname) {
             socket.emit('friendsAsk',{
               'id':user,
@@ -140,6 +140,21 @@ io.on('connection', function(socket) {
       }
     });
   }
+
+  socket.on("getMyFriends", function () {
+    redisDao.getFriends(userId).then(function (data) {
+      if (data.length) {
+        data.forEach(function (user) {
+          redisDao.getFriendInfo(user).then(function (info) {
+            redisDao.isUserOnline(info['id']).then(function (isOnline) {
+              info['isOnline'] = isOnline;
+              socket.emit('newFriend', info);
+            });
+          });
+        });
+      }
+    });
+  });
 
   socket.on('letsTalk',function(data){
     /**
@@ -225,31 +240,113 @@ io.on('connection', function(socket) {
   socket.on('addFriends',function (friendId) {
     if (userId != friendId) {
       //将自己的id添加到对方的好友请求列表中
-      redisDao.addFriendsAsk(friendId, userId);
-      //对方在线则立即告知
-      if (sockets[friendId]) {
-        var message = {
-          'id': userId,
-          'name': socket.request.session.userName
-        };
-        sockets[friendId].emit('friendsAsk', message);
-      }
+      redisDao.isFriendsAskExists(friendId, userId).then(function (exists) {
+        if (exists) {
+          socket.emit("duplicateFriAsk");
+        } else {
+          redisDao.addFriendsAsk(friendId, userId);
+          //对方在线则立即告知
+          if (sockets[friendId]) {
+            var message = {
+              'id': userId,
+              'name': socket.request.session.userName
+            };
+            sockets[friendId].emit('friendsAsk', message);
+          }
+        }
+      });
     }
   });
 
   socket.on('acceptFriendsAsk',function (friendId) {
-      //检查对方是否有加我为好友的请求
-      if(redisDao.isFriendsAskExists(userId,friendId)&&(userId!=friendId)){
+    //检查对方是否有加我为好友的请求
+    if (userId != friendId) {
+      //是否已经发起过请求
+      redisDao.isFriendsAskExists(userId, friendId).then(function (exists) {
+        // console.log(exists);
+        if (exists) {
           redisDao.addFriendsRelationship(userId,friendId);
           redisDao.deleteFriendsAsk(userId,friendId);
+          redisDao.getFriendInfo(friendId).then(function (info) {
+            info['isOnline'] = 0;
+            if (sockets[info['id']])
+              info['isOnline'] = 1;
+            socket.emit("newFriendNotification", info);
+            socket.emit("newFriend", info);
+          });
+          if (sockets[friendId]) {
+            redisDao.getFriendInfo(userId).then(function (info) {
+              info['isOnline'] = 0;
+              if (sockets[info['id']])
+                info['isOnline'] = 1;
+              sockets[friendId].emit("newFriendNotification", info);
+              sockets[friendId].emit("newFriend", info);
+            });
+          }
+          redisDao.addNewFriend(userId, friendId);
+        }
+      });
+    }
+  });
+
+  //解除好友关系
+  socket.on("deleteFriend", function (fid) {
+    redisDao.isFriends(userId, fid).then(function (isFriend) {
+      if (isFriend) {
+        redisDao.deleteFriendsRelationship(userId, fid);
+        var msg = {
+          'id': fid,
+          'byMe': true
+        };
+        socket.emit("deleteFriendSuccess", msg);
+        if (sockets[fid]) {
+          var msg = {
+            'id': userId,
+            'byMe': false
+          };
+          sockets[fid].emit("deleteFriendSuccess", msg);
+        }
+        redisDao.friendDeleted(fid, userId);
       }
+    });
   });
 
   socket.on('rejectFriendsAsk',function (friendId) {
     //检查对方是否有加我为好友的请求
-    if(redisDao.isFriendsAskExists(userId,friendId)){
-      redisDao.deleteFriendsAsk(userId,friendId);
+    if (userId != friendId) {
+      redisDao.isFriendsAskExists(userId, friendId).then(function (exists) {
+        if (exists) {
+          redisDao.deleteFriendsAsk(userId, friendId);
+        }
+      });
     }
+  });
+
+  socket.on("getNotifications", function () {
+    redisDao.getNewFriends(userId).then(function (data) {
+      if (data.length)
+        socket.emit("newFriends", data);
+    });
+  });
+
+  socket.on("getFriendsDeleted", function () {
+    redisDao.getFriendsDeleted(userId).then(function (data) {
+      for (var i = 0; i < data.length; i++) {
+        var msg = {"id": data[i]};
+        redisDao.getNickName(data[i]).then(function (nickname) {
+          msg["name"] = nickname;
+          socket.emit("friendDeleted", msg);
+        });
+      }
+    });
+  });
+
+  socket.on("delNewFriend", function (id) {
+    redisDao.delNewFriend(userId, id);
+  });
+
+  socket.on("delFriendDeleted", function (id) {
+    redisDao.deleteFriendDeleted(userId, id);
   });
   
 });

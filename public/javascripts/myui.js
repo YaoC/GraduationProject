@@ -2,6 +2,8 @@ var privateKey = null;
 var publicKey = null;
 var friendsKeys = {};
 
+var unreads = {};
+
 $(document).ready(function () {
   privateKey = $("#myPrivateKey").val();
   publicKey = $("#myPublicKey").val();
@@ -192,46 +194,71 @@ function searchCheck(){
 }
 
 function  searchFriend() {
-  $("#btn-search").attr("disabled","disabled");
-  $("#btn-search").text("查找中...");
-  var content = $("#ipt-friends").val();
-  var showFriendInfo = function (data) {
-    console.log(data);
-    if(data.code==200){
+  if(searchValidation==1){
+    $("#btn-search").attr("disabled", "disabled");
+    $("#btn-search").text("查找中...");
+    var content = $("#ipt-friends").val();
+    $("#addFriends").modal('hide');
+    showFriendInfo(content);
+    $("#btn-search").removeAttr("disabled");
+    $("#btn-search").text("查找");
+  }
+}
+
+function showFriendInfo(content) {
+  var friendInfo = function (data) {
+    // console.log(data);
+    if (data.code == 200) {
       console.log(data);
       $("#friends-id").val(data.id);
       $("#friends-nickname").val(data.nickname);
-      $("#friends-sex").val((data.sex)?'男':'女');
+      $("#friends-sex").val((data.sex) ? '男' : '女');
       $("#friends-birthday").val(data.birthday);
-      $("#friends-img").attr('src',data.portrait);
+      $("#friends-img").attr('src', data.portrait);
       $("#friends-motto").text(data.motto);
-      $("#btn-addFriend").attr('onclick','addFriends('+data.id+')');
-      $("#addFriends").modal('hide');
+      if (data.isFriend) {
+        $("#friends-phone").val(data.phone);
+        $("#btn-addFriend").attr('onclick', 'deleteFriend(' + data.id + ')');
+        $("#btn-addFriend").removeClass();
+        $("#btn-addFriend").addClass("btn btn-danger");
+        $("#btn-addFriend").text("删除好友");
+      } else {
+        if (data.id == $("#ipt-userId").val()) {
+          $("#friends-phone").val(data.phone);
+          $("#btn-addFriend").removeAttr("onclick");
+          $("#btn-addFriend").removeClass();
+          $("#btn-addFriend").addClass("btn btn-success");
+          $("#btn-addFriend").text("我自己");
+        } else {
+          $("#btn-addFriend").removeClass();
+          $("#btn-addFriend").addClass("btn btn-primary");
+          $("#btn-addFriend").attr('onclick', 'addFriends(' + data.id + ')');
+          $("#btn-addFriend").text("加为好友");
+        }
+      }
       $("#friend-info").modal('show');
     }
-    if(data.code==404){
+    if (data.code == 404) {
       $("#addFriends").modal('hide');
       alertInfoDanger("没有此用户");
     }
-    $("#btn-search").removeAttr("disabled");
-    $("#btn-search").text("查找");
   };
-  if(searchValidation==1){
-    $.ajax({
-      type: "POST",
-      url: "/queryById",
-      data: {'id':content},
-      dataType:'json',
-      success:showFriendInfo
-    });
-  }
-
-
+  $.ajax({
+    type: "POST",
+    url: "/queryById",
+    data: {'id': content},
+    dataType: 'json',
+    success: friendInfo
+  });
 }
 
-
-
-
+function deleteFriend(id) {
+  $("#friend-info").modal('hide');
+  var name = $("#nickname" + id).text();
+  $("#confirmMessage").text("是否解除与用户 " + name + "(id:" + id + ") 的好友关系？");
+  $("#deleteConfirm").attr("onclick", "deleteFriendConfirm(" + id + ")");
+  $('#confirm').modal('show')
+}
 
 function showError(id,info) {
   $("#ipt-"+id).parent().removeClass();
@@ -255,12 +282,35 @@ function showSuccess(id) {
 }
 
 function  showFriendAsk(id,name,time) {
+  $("#session").attr("style", "display:none;");
   $("#p-content").text(name+"(ID："+id+")希望添加你为好友!");
   $("#p-from").text("来自："+name);
   $("#p-time").text(time);
   $("#accept-friend-ask").attr("onclick","acceptFriendsAsk("+id+")");
   $("#reject-friend-ask").attr("onclick","rejectFriendsAsk("+id+")");
   $("#friendAsk").removeAttr("style");
+}
+
+function showFriendNotification(title, id, name, time) {
+  $("#session").attr("style", "display:none;");
+  $("#friendAsk").attr("style", "display:none;");
+  $("#notiTitle").text(title);
+  $("#notiContent").text("恭喜！你已和 " + name + "(ID：" + id + ") 成为为好友!");
+  $("#notiFrom").text("来自：" + name);
+  $("#notiTime").text(time);
+  $("#notiDelete").attr("onclick", "delNewFriend(" + id + ")");
+  $("#notification").removeAttr("style");
+}
+
+function showDelFriendNotification(title, id, name, time) {
+  $("#session").attr("style", "display:none;");
+  $("#friendAsk").attr("style", "display:none;");
+  $("#notiTitle").text(title);
+  $("#notiContent").text("很遗憾！" + name + "(ID：" + id + ") 解除了你们的好友关系!你可以尝试重新加" + name + "为好友。");
+  $("#notiFrom").text("来自：" + name);
+  $("#notiTime").text(time);
+  $("#notiDelete").attr("onclick", "delFriendDeleted(" + id + ")");
+  $("#notification").removeAttr("style");
 }
 
 function removeWindow(id) {
@@ -280,7 +330,6 @@ function searchFile(){
 }
 
 function uploadFile() {
-
   addFile();
   $('#file').fileinput('clear');
   return false;
@@ -541,5 +590,18 @@ function keyEvent() {
   if (event.keyCode == 13) {
     var id = parseInt($("#session-id").val());
     sendMessage(id);
+  }
+}
+
+function setConnectionNotification() {
+  var notification = 0;
+  for (var i = 0; i < connections.length; i++) {
+    notification += unreads[connections[i]];
+  }
+  notification = notification > 99 ? 99 : notification;
+  $("#connectionNum").remove();
+  if (notification) {
+    var html = "<span id='connectionNum' class='badge'>" + notification + "</span>";
+    $("#connectionIcon").after(html);
   }
 }
